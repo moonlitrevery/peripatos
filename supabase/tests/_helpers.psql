@@ -1,0 +1,223 @@
+-- =============================================================================
+-- Fixtures compartilhadas dos testes pgTAP
+-- =============================================================================
+-- Incluído por cada arquivo de teste com `\ir _helpers.psql`, DENTRO da
+-- transação do teste: tudo aqui é desfeito no ROLLBACK final. A extensão
+-- .psql impede que o pg_prove o execute como se fosse um teste.
+--
+-- Usuários são simulados como a API faz: papel `authenticated` + claims do JWT
+-- em request.jwt.claims (é de lá que auth.uid() lê).
+-- =============================================================================
+
+create extension if not exists pgtap with schema extensions;
+
+create schema tests;
+grant usage on schema tests to authenticated, anon;
+
+create table tests.users (
+  alias text primary key,
+  id    uuid not null,
+  email text not null
+);
+
+-- Cria uma instituição de teste com um domínio na allowlist.
+create function tests.mk_institution(p_slug text, p_domain text)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_id uuid;
+begin
+  insert into public.institutions (name, slug) values (upper(p_slug), p_slug) returning id into v_id;
+  insert into private.institution_domains (domain, institution_id) values (p_domain, v_id);
+  return v_id;
+end
+$$;
+
+-- Cria um usuário pelo mesmo caminho do cadastro real (INSERT em auth.users,
+-- que dispara os triggers de validação e cria conta + perfil).
+-- p_onboard = true já deixa a conta ativa (onboarding completo, adulto).
+create function tests.mk_user(
+  p_alias text,
+  p_domain text default 'a.peripatos.test',
+  p_onboard boolean default true,
+  p_birth date default date '2000-01-01'
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_id    uuid := gen_random_uuid();
+  v_n     integer := (select count(*) from tests.users) + 1;
+  v_email text := p_alias || '.9900000' || lpad(v_n::text, 5, '0') || '@' || p_domain;
+begin
+  insert into auth.users (id, instance_id, aud, role, email, created_at, updated_at)
+  values (v_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+          v_email, now(), now());
+
+  if p_onboard then
+    update private.accounts set birth_date = p_birth where user_id = v_id;
+    update public.profiles
+       set username = p_alias, display_name = initcap(p_alias), onboarding_completo = true
+     where id = v_id;
+  end if;
+
+  insert into tests.users (alias, id, email) values (p_alias, v_id, v_email);
+  return v_id;
+end
+$$;
+
+create function tests.uid(p_alias text)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select u.id from tests.users u where u.alias = p_alias
+$$;
+
+create function tests.email(p_alias text)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select u.email from tests.users u where u.alias = p_alias
+$$;
+
+-- Passa a agir como o usuário, do jeito que a API faria.
+-- p_extra permite injetar claims (ex.: user_metadata) para provar que são
+-- ignorados na autorização.
+create function tests.login(p_alias text, p_extra jsonb default '{}'::jsonb)
+returns void
+language plpgsql
+as $$
+begin
+  if tests.uid(p_alias) is null then
+    raise exception 'tests.login: usuário de teste "%" não existe', p_alias;
+  end if;
+  perform set_config('role', 'authenticated', true);
+  perform set_config(
+    'request.jwt.claims',
+    (jsonb_build_object('sub', tests.uid(p_alias), 'role', 'authenticated') || p_extra)::text,
+    true
+  );
+end
+$$;
+
+-- Requisição sem login.
+create function tests.login_anon()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('role', 'anon', true);
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+end
+$$;
+
+-- Volta a ser o superusuário dos testes (para preparar dados e conferir o
+-- estado real das tabelas, sem RLS).
+create function tests.logout()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('role', 'none', true);
+  perform set_config('request.jwt.claims', '', true);
+end
+$$;
+
+create function tests.mk_tag(p_slug text, p_sensitive boolean default false)
+returns integer
+language sql
+as $$
+  insert into public.tags (category, slug, name, is_sensitive)
+  values ('teste', p_slug, p_slug, p_sensitive)
+  returning id
+$$;
+
+create function tests.tag(p_slug text)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select t.id from public.tags t where t.slug = p_slug
+$$;
+
+create function tests.add_tag(p_alias text, p_slug text)
+returns void
+language plpgsql
+as $$
+begin
+  if (select t.is_sensitive from public.tags t where t.slug = p_slug) then
+    insert into public.profile_sensitive_tags (user_id, tag_id) values (tests.uid(p_alias), tests.tag(p_slug));
+  else
+    insert into public.profile_tags (user_id, tag_id) values (tests.uid(p_alias), tests.tag(p_slug));
+  end if;
+end
+$$;
+
+create function tests.follow(p_from text, p_to text)
+returns void
+language sql
+as $$
+  insert into public.follows (follower_id, followee_id) values (tests.uid(p_from), tests.uid(p_to))
+$$;
+
+create function tests.mk_post(p_alias text, p_body text, p_age interval default interval '0')
+returns uuid
+language sql
+as $$
+  insert into public.posts (author_id, institution_id, body, created_at)
+  select p.id, p.institution_id, p_body, now() - p_age
+  from public.profiles p
+  where p.id = tests.uid(p_alias)
+  returning id
+$$;
+
+-- Mundo padrão:
+--   Instituição A (a.peripatos.test)
+--     ana, bia, caio, davi  -> ativos
+--     moda                  -> moderador     adma -> admin
+--     novo                  -> sem onboarding
+--   Instituição B (b.peripatos.test)
+--     zeca -> ativo         modb -> moderador
+--   Tags de teste: t-rock, t-rpg, t-xadrez (comuns) e t-sensivel (sensível)
+create function tests.seed_world()
+returns void
+language plpgsql
+as $$
+begin
+  perform tests.mk_institution('teste-a', 'a.peripatos.test');
+  perform tests.mk_institution('teste-b', 'b.peripatos.test');
+
+  perform tests.mk_user('ana');
+  perform tests.mk_user('bia');
+  perform tests.mk_user('caio');
+  perform tests.mk_user('davi');
+  perform tests.mk_user('moda');
+  perform tests.mk_user('adma');
+  perform tests.mk_user('novo', 'a.peripatos.test', false);
+  perform tests.mk_user('zeca', 'b.peripatos.test');
+  perform tests.mk_user('modb', 'b.peripatos.test');
+
+  insert into public.staff_roles (user_id, institution_id, role)
+  select p.id, p.institution_id, r.role::public.staff_role
+  from (values ('moda', 'moderador'), ('adma', 'admin'), ('modb', 'moderador')) as r (alias, role)
+  join public.profiles p on p.id = tests.uid(r.alias);
+
+  perform tests.mk_tag('t-rock');
+  perform tests.mk_tag('t-rpg');
+  perform tests.mk_tag('t-xadrez');
+  perform tests.mk_tag('t-sensivel', true);
+end
+$$;
+
+grant execute on all functions in schema tests to authenticated, anon;
+-- As asserções do pgTAP também rodam com o papel do usuário simulado.
+grant execute on all functions in schema extensions to authenticated, anon;
