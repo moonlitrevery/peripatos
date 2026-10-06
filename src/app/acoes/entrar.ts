@@ -27,13 +27,20 @@ export async function verificarCodigo(emailBruto: string, codigoBruto: string): 
   if (token.length !== 6) return falha("O código tem 6 dígitos.");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
   if (error) {
     // O Auth devolve otp_expired tanto para código errado quanto para vencido.
     if (error.code === "user_banned") return falha("Esta conta foi suspensa.");
     return falha("Código inválido ou expirado. Confira os dígitos ou peça outro.");
   }
-  redirect("/");
+
+  // Quem ainda não fez o onboarding vai direto para lá. Deixar isso para o
+  // proxy funciona, mas ele reescreve o destino de um redirect de server
+  // action sem trocar o endereço: a tela certa apareceria sob a URL "/".
+  const { data: perfil } = data.user
+    ? await supabase.from("profiles").select("onboarding_completo").eq("id", data.user.id).maybeSingle()
+    : { data: null };
+  redirect(perfil?.onboarding_completo === true ? "/" : "/onboarding");
 }
 
 export async function sair() {

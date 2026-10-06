@@ -77,6 +77,14 @@ export async function codigoNovo(email: string, antes: Set<string>): Promise<str
 // Entrar pela interface
 // ---------------------------------------------------------------------------
 
+/**
+ * A mensagem de erro na tela. O Next mantém um anunciador de rota que também
+ * tem role="alert" (e fica vazio), então ele fica de fora.
+ */
+export function alerta(page: Page) {
+  return page.locator('[role="alert"]:not(#__next-route-announcer__)');
+}
+
 /** Pede o código em /entrar e para na tela do código. Devolve o código certo. */
 export async function pedirCodigo(page: Page, email: string): Promise<string> {
   const antes = await caixaAntes(email);

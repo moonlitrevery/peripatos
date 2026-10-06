@@ -104,7 +104,7 @@ O cadastro é recusado se: o domínio não está em `private.institution_domains
 
 - **Conta ativa** = onboarding completo **e** 18 anos ou mais **e** não banida (`private.is_active`). Só conta ativa posta, segue, denuncia e aparece para os outros.
 - Antes disso, a pessoa **só vê e edita o próprio perfil**.
-- **Menor de 18 não fica guardado.** Se a data informada é de menor, a conta inteira é apagada dentro da própria chamada (usuário do Auth, e-mail, RA, a data) e a função devolve `menor_de_idade: true`. A tela mostra "O Peripatos é para maiores de 18. Volte quando fizer aniversário."
+- **Menor de 18 não fica guardado.** Se a data informada é de menor, a conta inteira é apagada dentro da própria chamada (usuário do Auth, e-mail, RA, a data) e a função devolve `menor_de_idade: true`. A pessoa é levada para `/maiores-de-18`, página pública que mostra "O Peripatos é para maiores de 18. Volte quando fizer aniversário."
 - Consequência assumida: como nada fica guardado, a mesma pessoa pode se cadastrar de novo com outra data. O banco nunca teve como conferir a data; o que mudou é que não guardamos dados de quem se declarou menor. `private.is_active` continua conferindo a idade, como segunda camada.
 - **A data de nascimento é gravada uma vez.**
 - `display_name` é livre e independente do nome do e-mail (nome social, apelido). `username` é único **por instituição**.
@@ -301,13 +301,14 @@ Roda num celular (Pixel 7) contra o Supabase local, com um build de produção d
 | Arquivo | Cobre |
 | --- | --- |
 | `01-entrar` | E-mail fora da lista e sem RA recusados com a mensagem do banco; código errado; contagem do reenvio; login com o código do e-mail |
-| `02-onboarding` | Menor de idade barrado e apagado do Auth; adulto com gostos e tag sensível (seção fechada por padrão) |
+| `02-onboarding` | Menor de idade barrado, levado a `/maiores-de-18` e apagado do Auth; adulto com gostos e tag sensível (seção fechada por padrão) |
 | `03-feed` | Postar com GIF: grava só o ID e exibe. A rota `/api/giphy` é simulada no navegador, então não precisa de chave; sem login ela responde 401 |
 | `04-seguir-e-tag-sensivel` | Em Gente, a contagem bate com os chips em âmbar; seguir de volta vira mútuo, e só então a tag sensível aparece |
 | `05-bloqueio` | Perfil e posts somem do feed, de Gente e do endereço direto, nos dois sentidos |
 | `06-moderacao` | Usuário comum é redirecionado de `/moderacao`; moderadora entra |
 | `07-excluir-conta` | A conta some do Auth, e o perfil e os posts somem para os outros |
 | `08-avatar-sem-exif` | Falando direto com a API (sem o redimensionamento do navegador): a função tira o EXIF, apaga o original e deixa a foto pendente |
+| `09-service-worker` | Com o service worker ativo e controlando a página, depois de logar e navegar: a Cache Storage tem só a página offline e os ícones, nada do Supabase nem de rota autenticada; sem rede, entrega a página offline e não uma cópia do Início |
 
 Os testes usam a service role local para conferir, por fora do app, que uma conta ou um arquivo deixou de existir. Ela é lida de `supabase status` na hora e não fica em nenhum arquivo.
 

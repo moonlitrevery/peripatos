@@ -10,7 +10,7 @@ import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 // Isto é conforto de navegação. Quem protege os dados é o RLS: uma requisição
 // que escape daqui continua sem conseguir ler nada.
 
-const PUBLICAS = ["/entrar", "/termos", "/privacidade", "/offline"];
+const PUBLICAS = ["/entrar", "/termos", "/privacidade", "/offline", "/maiores-de-18"];
 
 function ehPublica(caminho: string) {
   return PUBLICAS.some((p) => caminho === p || caminho.startsWith(p + "/"));

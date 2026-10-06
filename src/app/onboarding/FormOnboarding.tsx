@@ -24,7 +24,6 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
   const [preset, setPreset] = useState<number | null>(1);
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [menor, setMenor] = useState(false);
   const [pendente, iniciar] = useTransition();
   const titulo = useRef<HTMLHeadingElement>(null);
 
@@ -32,7 +31,7 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
   // saberem que a tela mudou.
   useEffect(() => {
     titulo.current?.focus();
-  }, [passo, menor]);
+  }, [passo]);
 
   const hoje = new Date().toISOString().slice(0, 10);
   const comunsDisponiveis = tags.filter((t) => !t.sensivel);
@@ -53,10 +52,10 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
     if (idade < 18) {
       // O banco é quem decide e quem apaga: mandamos a data e ele remove a
       // conta na mesma chamada. Nada do formulário fica guardado.
+      // Se for mesmo menor, a action redireciona para /maiores-de-18.
       iniciar(async () => {
         const r = await concluirOnboarding(dados());
-        if (r.ok && r.dados.menor) setMenor(true);
-        else if (!r.ok) setErro(r.erro);
+        if (!r.ok) setErro(r.erro);
         else router.replace("/");
       });
       return;
@@ -73,10 +72,6 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
         if (/username/i.test(r.erro)) setPasso(0);
         return;
       }
-      if (r.dados.menor) {
-        setMenor(true);
-        return;
-      }
       if (arquivo) {
         // A conta já está criada. Se a foto falhar, a pessoa segue com o
         // avatar pronto e pode tentar de novo em Configurações.
@@ -85,23 +80,6 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
       router.replace("/");
       router.refresh();
     });
-  }
-
-  if (menor) {
-    return (
-      <section className="flex flex-col gap-4" aria-live="polite">
-        <h1 ref={titulo} tabIndex={-1} className="text-3xl font-bold outline-none">
-          O Peripatos é para maiores de 18
-        </h1>
-        <p>Volte quando fizer aniversário.</p>
-        <p className="text-tinta-2">
-          Apagamos os dados deste cadastro agora: seu e-mail, seu RA e a data que você informou não ficaram guardados.
-        </p>
-        <a href="/entrar" className="btn btn-qui self-start">
-          Voltar ao início
-        </a>
-      </section>
-    );
   }
 
   return (

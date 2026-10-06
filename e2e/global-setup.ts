@@ -43,11 +43,28 @@ async function esperar(url: string, headers: Record<string, string>, oQue: strin
   }
 }
 
+// Em redes que injetam um "search domain" com DNS curinga (a do campus), o
+// Kong perde o caminho até o Auth quando o `db reset` reinicia os contêineres.
+// O script só mexe no resolv.conf de dentro do contêiner do Kong e não faz
+// nada quando não há `search`. Ver scripts/corrigir-dns-kong.sh.
+function corrigirDnsDoKong() {
+  try {
+    const saida = execSync(`bash "${path.join(__dirname, "..", "scripts", "corrigir-dns-kong.sh")}"`, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    console.log(`e2e: ${saida.trim()}`);
+  } catch {
+    // Sem Docker acessível daqui (Supabase em outro lugar): segue como está.
+  }
+}
+
 export default async function globalSetup() {
   if (!process.env.E2E_SEM_RESET) {
     console.log("e2e: recriando o banco local (supabase db reset)…");
     supabase("db reset");
   }
+  corrigirDnsDoKong();
 
   const status = lerStatus();
   const url = status.API_URL;
