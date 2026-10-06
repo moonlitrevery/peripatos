@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { falha, mensagemDeErro, ok, type Resultado } from "@/lib/erros";
 import { gravarTags } from "@/lib/gravar-tags";
 import { createClient } from "@/lib/supabase/server";
@@ -14,7 +15,7 @@ type Dados = {
   preset: number | null;
 };
 
-export async function concluirOnboarding(d: Dados): Promise<Resultado<{ menor: boolean }>> {
+export async function concluirOnboarding(d: Dados): Promise<Resultado> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,9 +32,12 @@ export async function concluirOnboarding(d: Dados): Promise<Resultado<{ menor: b
 
   const resposta = data as { menor_de_idade?: boolean } | null;
   if (resposta?.menor_de_idade) {
-    // O banco já apagou a conta inteira. Aqui só limpamos os cookies.
+    // O banco já apagou a conta inteira. Aqui só limpamos os cookies e
+    // levamos a pessoa para a página pública que explica. Devolver o aviso
+    // para a tela de onboarding não funciona: sem sessão, o proxy tira a
+    // pessoa de lá antes de a mensagem aparecer.
     await supabase.auth.signOut({ scope: "local" });
-    return ok({ menor: true });
+    redirect("/maiores-de-18");
   }
 
   const erroTags = await gravarTags(supabase, user.id, d.tagsComuns, d.tagsSensiveis);
@@ -42,5 +46,5 @@ export async function concluirOnboarding(d: Dados): Promise<Resultado<{ menor: b
   if (d.preset) {
     await supabase.from("profiles").update({ avatar_preset: d.preset }).eq("id", user.id);
   }
-  return ok({ menor: false });
+  return ok(undefined);
 }

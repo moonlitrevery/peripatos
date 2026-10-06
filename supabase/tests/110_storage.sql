@@ -84,8 +84,11 @@ select is(
 );
 update storage.objects set metadata = '{"x": 1}' where bucket_id = 'avatars';
 select tests.logout();
+-- Só o arquivo deste teste: num banco que já rodou o e2e existem outros
+-- avatares, gravados pela API de Storage, que sempre têm metadata.
 select is(
-  (select count(*) from storage.objects where bucket_id = 'avatars' and metadata is not null), 0::bigint,
+  (select count(*) from storage.objects
+    where bucket_id = 'avatars' and name = tests.uid('ana') || '/foto.webp' and metadata is not null), 0::bigint,
   'a dona não altera o arquivo processado (não há política de UPDATE)'
 );
 select tests.login('ana');
