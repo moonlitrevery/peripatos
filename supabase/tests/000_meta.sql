@@ -178,7 +178,7 @@ select bag_eq(
   $$ values
        ('completar_onboarding'), ('conta_status'), ('excluir_conta'),
        ('afinidade'), ('pessoas_parecidas'), ('feed'),
-       ('apagar_post'), ('minhas_denuncias'),
+       ('apagar_post'), ('minhas_denuncias'), ('meus_bloqueios'),
        ('ocultar_post'), ('restaurar_post'), ('banir_usuario'), ('desbanir_usuario'),
        ('moderar_avatar'), ('resolver_denuncia'),
        ('definir_cargo'), ('remover_cargo'), ('resolver_pedido_tag') $$,

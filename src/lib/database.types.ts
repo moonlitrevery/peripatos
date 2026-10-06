@@ -1,0 +1,497 @@
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type Database = {
+  
+  "public": {
+          Tables: {
+            "blocks": {
+                  Row: {
+                    "blocked_id": string,"blocker_id": string,"created_at": string
+                  }
+                  Insert: {
+                    "blocked_id": string,"blocker_id"?: string,"created_at"?: string
+                  }
+                  Update: {
+                    "blocked_id"?: string,"blocker_id"?: string,"created_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "blocks_blocked_id_fkey"
+      columns: ["blocked_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "blocks_blocker_id_fkey"
+      columns: ["blocker_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"follows": {
+                  Row: {
+                    "created_at": string,"followee_id": string,"follower_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"followee_id": string,"follower_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"followee_id"?: string,"follower_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "follows_followee_id_fkey"
+      columns: ["followee_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "follows_follower_id_fkey"
+      columns: ["follower_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"institutions": {
+                  Row: {
+                    "created_at": string,"id": string,"name": string,"slug": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"name": string,"slug": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"name"?: string,"slug"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"moderation_actions": {
+                  Row: {
+                    "action": Database["public"]['Enums']["moderation_action_type"],"actor_id": string | null,"created_at": string,"id": number,"institution_id": string,"metadata": NonNullable<Json>,"reason": string,"report_id": string | null,"target_post_id": string | null,"target_user_id": string | null
+                  }
+                  Insert: {
+                    "action": Database["public"]['Enums']["moderation_action_type"],"actor_id"?: string | null,"created_at"?: string,"id"?: never,"institution_id": string,"metadata"?: NonNullable<Json>,"reason": string,"report_id"?: string | null,"target_post_id"?: string | null,"target_user_id"?: string | null
+                  }
+                  Update: {
+                    "action"?: Database["public"]['Enums']["moderation_action_type"],"actor_id"?: string | null,"created_at"?: string,"id"?: never,"institution_id"?: string,"metadata"?: NonNullable<Json>,"reason"?: string,"report_id"?: string | null,"target_post_id"?: string | null,"target_user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "moderation_actions_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "moderation_actions_institution_id_fkey"
+      columns: ["institution_id"]
+isOneToOne: false
+      referencedRelation: "institutions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "moderation_actions_report_id_fkey"
+      columns: ["report_id"]
+isOneToOne: false
+      referencedRelation: "reports"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "moderation_actions_target_post_id_fkey"
+      columns: ["target_post_id"]
+isOneToOne: false
+      referencedRelation: "posts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "moderation_actions_target_user_id_fkey"
+      columns: ["target_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"posts": {
+                  Row: {
+                    "author_id": string,"body": string,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"gif_id": string | null,"hidden_at": string | null,"hidden_by": string | null,"id": string,"institution_id": string
+                  }
+                  Insert: {
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"gif_id"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id"?: string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"gif_id"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "posts_author_id_institution_id_fkey"
+      columns: ["author_id","institution_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id","institution_id"]
+    },{
+      foreignKeyName: "posts_hidden_by_fkey"
+      columns: ["hidden_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profile_sensitive_tags": {
+                  Row: {
+                    "created_at": string,"tag_id": number,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"tag_id": number,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"tag_id"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_sensitive_tags_tag_id_fkey"
+      columns: ["tag_id"]
+isOneToOne: false
+      referencedRelation: "tags"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profile_sensitive_tags_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profile_tags": {
+                  Row: {
+                    "created_at": string,"tag_id": number,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"tag_id": number,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"tag_id"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_tags_tag_id_fkey"
+      columns: ["tag_id"]
+isOneToOne: false
+      referencedRelation: "tags"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profile_tags_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "avatar_path": string | null,"avatar_preset": number | null,"avatar_status": Database["public"]['Enums']["avatar_status"],"banned_at": string | null,"bio": string | null,"created_at": string,"display_name": string | null,"id": string,"institution_id": string,"onboarding_completo": boolean,"updated_at": string,"username": string | null
+                  }
+                  Insert: {
+                    "avatar_path"?: string | null,"avatar_preset"?: number | null,"avatar_status"?: Database["public"]['Enums']["avatar_status"],"banned_at"?: string | null,"bio"?: string | null,"created_at"?: string,"display_name"?: string | null,"id": string,"institution_id": string,"onboarding_completo"?: boolean,"updated_at"?: string,"username"?: string | null
+                  }
+                  Update: {
+                    "avatar_path"?: string | null,"avatar_preset"?: number | null,"avatar_status"?: Database["public"]['Enums']["avatar_status"],"banned_at"?: string | null,"bio"?: string | null,"created_at"?: string,"display_name"?: string | null,"id"?: string,"institution_id"?: string,"onboarding_completo"?: boolean,"updated_at"?: string,"username"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profiles_institution_id_fkey"
+      columns: ["institution_id"]
+isOneToOne: false
+      referencedRelation: "institutions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"reports": {
+                  Row: {
+                    "created_at": string,"details": string | null,"id": string,"institution_id": string,"post_id": string | null,"profile_id": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": Database["public"]['Enums']["report_status"]
+                  }
+                  Insert: {
+                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"post_id"?: string | null,"profile_id"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                  }
+                  Update: {
+                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"post_id"?: string | null,"profile_id"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reports_post_id_fkey"
+      columns: ["post_id"]
+isOneToOne: false
+      referencedRelation: "posts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_reporter_id_institution_id_fkey"
+      columns: ["reporter_id","institution_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id","institution_id"]
+    },{
+      foreignKeyName: "reports_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_roles": {
+                  Row: {
+                    "created_at": string,"granted_by": string | null,"institution_id": string,"role": Database["public"]['Enums']["staff_role"],"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"granted_by"?: string | null,"institution_id": string,"role": Database["public"]['Enums']["staff_role"],"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"granted_by"?: string | null,"institution_id"?: string,"role"?: Database["public"]['Enums']["staff_role"],"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_roles_granted_by_fkey"
+      columns: ["granted_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_roles_user_id_institution_id_fkey"
+      columns: ["user_id","institution_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id","institution_id"]
+    }
+                  ]
+                },"tag_requests": {
+                  Row: {
+                    "category": string | null,"created_at": string,"id": string,"institution_id": string,"justification": string | null,"name": string,"resolved_at": string | null,"resolved_by": string | null,"status": Database["public"]['Enums']["tag_request_status"],"user_id": string
+                  }
+                  Insert: {
+                    "category"?: string | null,"created_at"?: string,"id"?: string,"institution_id"?: string,"justification"?: string | null,"name": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["tag_request_status"],"user_id"?: string
+                  }
+                  Update: {
+                    "category"?: string | null,"created_at"?: string,"id"?: string,"institution_id"?: string,"justification"?: string | null,"name"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["tag_request_status"],"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tag_requests_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tag_requests_user_id_institution_id_fkey"
+      columns: ["user_id","institution_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id","institution_id"]
+    }
+                  ]
+                },"tags": {
+                  Row: {
+                    "category": string,"created_at": string,"id": number,"is_sensitive": boolean,"name": string,"slug": string
+                  }
+                  Insert: {
+                    "category": string,"created_at"?: string,"id"?: never,"is_sensitive"?: boolean,"name": string,"slug": string
+                  }
+                  Update: {
+                    "category"?: string,"created_at"?: string,"id"?: never,"is_sensitive"?: boolean,"name"?: string,"slug"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
+          }
+          Views: {
+            [_ in never]: never
+          }
+          Functions: {
+            "afinidade":
+{ Args: { "p_outro": string }; Returns: number
+                           },
+"apagar_post":
+{ Args: { "p_post_id": string }; Returns: undefined
+                           },
+"banir_usuario":
+{ Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
+                           },
+"completar_onboarding":
+{ Args: { "p_bio"?: string,"p_data_nascimento": string,"p_display_name": string,"p_username": string }; Returns: Json
+                           },
+"conta_status":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"definir_cargo":
+{ Args: { "p_motivo": string,"p_papel": Database["public"]['Enums']["staff_role"],"p_user_id": string }; Returns: undefined
+                           },
+"desbanir_usuario":
+{ Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
+                           },
+"excluir_conta":
+{ Args: { "p_confirmacao": string }; Returns: undefined
+                           },
+"feed":
+{ Args: { "p_cursor"?: string,"p_limite"?: number }; Returns: {
+              "afinidade": number,"author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"score": number,"username": string
+            }[]
+                           },
+"meus_bloqueios":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "bloqueado_em": string,"display_name": string,"user_id": string,"username": string
+            }[]
+                           },
+"minhas_denuncias":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "created_at": string,"id": string,"post_id": string,"profile_id": string,"reason": Database["public"]['Enums']["report_reason"],"status": Database["public"]['Enums']["report_status"]
+            }[]
+                           },
+"moderar_avatar":
+{ Args: { "p_aprovar": boolean,"p_motivo": string,"p_user_id": string }; Returns: undefined
+                           },
+"ocultar_post":
+{ Args: { "p_motivo": string,"p_post_id": string }; Returns: undefined
+                           },
+"pessoas_parecidas":
+{ Args: { "p_limite"?: number }; Returns: {
+              "afinidade": number,"avatar_path": string,"avatar_preset": number,"bio": string,"display_name": string,"mutual": boolean,"tags_em_comum": Json,"user_id": string,"username": string
+            }[]
+                           },
+"remover_cargo":
+{ Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
+                           },
+"resolver_denuncia":
+{ Args: { "p_nota": string,"p_report_id": string,"p_status": Database["public"]['Enums']["report_status"] }; Returns: undefined
+                           },
+"resolver_pedido_tag":
+{ Args: { "p_aprovar": boolean,"p_motivo": string,"p_request_id": string }; Returns: undefined
+                           },
+"restaurar_post":
+{ Args: { "p_motivo": string,"p_post_id": string }; Returns: undefined
+                           }
+          }
+          Enums: {
+            "avatar_status": "sem_avatar"|"pendente"|"aprovado"|"recusado","moderation_action_type": "ocultar_post"|"restaurar_post"|"banir_usuario"|"desbanir_usuario"|"aprovar_avatar"|"recusar_avatar"|"resolver_denuncia"|"conceder_cargo"|"remover_cargo"|"resolver_pedido_tag","report_reason": "spam"|"assedio"|"discurso_de_odio"|"conteudo_sexual"|"violencia_ou_ameaca"|"perfil_falso"|"menor_de_idade"|"exposicao_de_dados_pessoais"|"outro","report_status": "aberta"|"em_analise"|"resolvida"|"rejeitada","staff_role": "moderador"|"admin","tag_request_status": "pendente"|"aprovada"|"recusada"
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
+        }
+}
+
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
+
+export const Constants = {
+  "public": {
+          Enums: {
+            "avatar_status": ["sem_avatar", "pendente", "aprovado", "recusado"],"moderation_action_type": ["ocultar_post", "restaurar_post", "banir_usuario", "desbanir_usuario", "aprovar_avatar", "recusar_avatar", "resolver_denuncia", "conceder_cargo", "remover_cargo", "resolver_pedido_tag"],"report_reason": ["spam", "assedio", "discurso_de_odio", "conteudo_sexual", "violencia_ou_ameaca", "perfil_falso", "menor_de_idade", "exposicao_de_dados_pessoais", "outro"],"report_status": ["aberta", "em_analise", "resolvida", "rejeitada"],"staff_role": ["moderador", "admin"],"tag_request_status": ["pendente", "aprovada", "recusada"]
+          }
+        }
+} as const
