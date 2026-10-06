@@ -176,7 +176,7 @@ select bag_eq(
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute') $$,
   $$ values
-       ('completar_onboarding'), ('conta_status'),
+       ('completar_onboarding'), ('conta_status'), ('excluir_conta'),
        ('afinidade'), ('pessoas_parecidas'), ('feed'),
        ('apagar_post'), ('minhas_denuncias'),
        ('ocultar_post'), ('restaurar_post'), ('banir_usuario'), ('desbanir_usuario'),
