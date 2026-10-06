@@ -11,6 +11,7 @@
     "db:types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts",
     "test:db": "supabase test db",
     "test:e2e": "playwright test",
+    "verificar:deploy": "node scripts/verificar-deploy.mjs",
     "test:exif": "npx --yes deno@2 test --no-lock --no-check --allow-read --allow-net --allow-env --allow-sys --config supabase/functions/processar-avatar/deno.json supabase/functions/processar-avatar/reencodar.test.ts"
   },
   "dependencies": {

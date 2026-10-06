@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Um push novo no mesmo branch cancela a execução anterior.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Num pull request vindo de um branch do próprio repositório, o push já
+  # rodou tudo: não repete.
+  testes:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # versão do campo packageManager
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: EXIF (re-encode do avatar, em Deno)
+        run: pnpm test:exif
+
+      # Studio, logs e pooler não participam de nenhum teste.
+      - name: Supabase local
+        run: pnpm exec supabase start -x studio,logflare,vector,imgproxy,supavisor
+
+      - name: Variáveis do app (.env.local a partir do supabase status)
+        run: |
+          pnpm exec supabase status -o env > "$RUNNER_TEMP/status.env"
+          valor() { grep -E "^$1=" "$RUNNER_TEMP/status.env" | head -1 | cut -d= -f2- | tr -d '"'; }
+          chave="$(valor PUBLISHABLE_KEY)"
+          [ -n "$chave" ] || chave="$(valor ANON_KEY)"
+          [ -n "$chave" ] || { echo "supabase status não devolveu a chave anon/publishable"; exit 1; }
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$(valor API_URL)"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$chave"
+            echo "GIPHY_API_KEY="
+          } > .env.local
+          rm "$RUNNER_TEMP/status.env"
+
+      # Só mexe no Kong se o gateway não estiver respondendo (rede com
+      # "search domain"). No runner do GitHub normalmente não é necessário.
+      - name: Gateway responde (corrige o DNS do Kong só se precisar)
+        run: |
+          . ./.env.local
+          saude() { curl -fsS -m 5 -o /dev/null -H "apikey: $NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/health"; }
+          for i in $(seq 1 15); do saude && exit 0; sleep 2; done
+          echo "Gateway sem resposta: aplicando scripts/corrigir-dns-kong.sh"
+          bash scripts/corrigir-dns-kong.sh
+          for i in $(seq 1 15); do saude && exit 0; sleep 2; done
+          echo "O gateway continua sem responder."; docker ps; exit 1
+
+      - name: Banco (pgTAP)
+        run: pnpm test:db
+
+      - name: Verificação da chave anon (o mesmo script do pós-deploy)
+        run: |
+          . ./.env.local
+          node scripts/verificar-deploy.mjs "$NEXT_PUBLIC_SUPABASE_URL" "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" --testar-hook
+
+      - name: Chromium do Playwright
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Ponta a ponta (Playwright)
+        run: pnpm test:e2e
+
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

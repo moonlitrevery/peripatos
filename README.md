@@ -40,7 +40,9 @@ Se `http://127.0.0.1:54321` não responder depois do `supabase start` (acontece 
 | `supabase/seed.sql` | **Só dados de teste locais**: oito contas, follows e posts |
 | `supabase/tests/` | Testes pgTAP (`_helpers.psql` são as fixtures) |
 | `e2e/` | Testes Playwright |
-| `supabase/config.toml` | OTP, auth hook e schemas expostos |
+| `supabase/config.toml` | OTP, auth hook e schemas expostos (**só local**; produção é configurada pelo painel, ver `docs/deploy.md`) |
+| `scripts/verificar-deploy.mjs` | Verificação pós-deploy com a chave pública |
+| `docs/deploy.md` | Checklist do deploy do beta |
 | `supabase/templates/otp.html` | E-mail com o código de 6 dígitos |
 
 > O seed não roda no projeto hospedado. A instituição, o domínio da allowlist e o vocabulário de tags estão na migration `20261006000001_vocabulario.sql`, que é idempotente: produção sobe com as tags.
@@ -267,6 +269,8 @@ pnpm exec playwright install chromium   # uma vez
 pnpm test:e2e     # Playwright (precisa do supabase start)
 ```
 
+No GitHub, o workflow `.github/workflows/ci.yml` roda tudo isso a cada push, num runner Ubuntu com o Supabase local, mais o `verificar:deploy` contra a stack local.
+
 ### Banco (pgTAP)
 
 `supabase test db` roda 14 arquivos pgTAP. Cada um simula usuários diferentes como a API faria: papel `authenticated` e os claims do JWT em `request.jwt.claims`.
@@ -312,24 +316,17 @@ Roda num celular (Pixel 7) contra o Supabase local, com um build de produção d
 
 Os testes usam a service role local para conferir, por fora do app, que uma conta ou um arquivo deixou de existir. Ela é lida de `supabase status` na hora e não fica em nenhum arquivo.
 
-## Deploy (para depois; ainda não foi feito)
+## Deploy (ainda não foi feito)
 
-1. **Projeto Supabase hospedado.** Crie o projeto e ligue o repositório: `pnpm exec supabase link --project-ref <ref>`.
-2. **Migrations.** `pnpm exec supabase db push`. Elas criam o schema, o segredo do HMAC no Vault, a UNISAGRADO, o domínio da allowlist e as tags. O seed não roda.
-3. **Edge Function.** `pnpm exec supabase functions deploy processar-avatar`. Ela precisa continuar com `verify_jwt = true`.
-4. **Auth, no painel** (replicando o `config.toml`):
-   - *Hooks → Before User Created* apontando para `private.hook_before_user_created`;
-   - provedor de e-mail ligado, com confirmação de e-mail; login anônimo e por telefone desligados;
-   - código de 6 dígitos e validade de 10 minutos;
-   - templates *Confirm signup* e *Magic Link* com o conteúdo de `supabase/templates/otp.html`: precisam mostrar `{{ .Token }}` e **não** ter link;
-   - *Site URL* com o endereço do Vercel.
-5. **SMTP.** O SMTP embutido do Supabase só entrega para membros do projeto e tem limite de poucos e-mails por hora. No beta, Gmail com senha de app: host `smtp.gmail.com`, porta `465`, usuário o endereço do Gmail, senha a **senha de app** (exige verificação em duas etapas na conta). O Gmail limita a cerca de 500 destinatários por dia.
-6. **Limites do Auth** (*Authentication → Rate Limits*). Confira dois:
-   - **e-mails enviados por hora**: com SMTP próprio o padrão é baixo para um dia de lançamento;
-   - **verificações de OTP**: o limite é por IP, e o app verifica o código numa server action, então o Auth enxerga os IPs do Vercel, não o de cada pessoa. Um limite pensado para um IP por usuário vira um limite para todo mundo junto.
-7. **Primeiro admin.** Depois de a pessoa se cadastrar e concluir o onboarding, insira o cargo por SQL: `insert into public.staff_roles (user_id, institution_id, role) select id, institution_id, 'admin' from public.profiles where username = '<username>';`
-8. **Vercel.** Importe o repositório e configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `GIPHY_API_KEY`. **Não** cadastre a service role no Vercel: o app não a usa.
-9. **Antes de abrir:** revisar `/termos` e `/privacidade` (são rascunhos) e trocar o e-mail de contato; pedir a chave de produção do Giphy (a de desenvolvimento tem limite baixo); aprovar fotos só depois de conferir que a função está no ar.
+O passo a passo do beta está em [docs/deploy.md](docs/deploy.md): o que é comando e o que é painel, tudo o que vive no `config.toml` e não é aplicado sozinho no projeto hospedado, o segredo do HMAC no Vault, a Edge Function, as variáveis do Vercel e como evitar que o projeto pause no plano grátis.
+
+Depois de qualquer deploy:
+
+```bash
+pnpm verificar:deploy https://<ref>.supabase.co <chave publishable>
+```
+
+O script confirma, só com a chave pública, que a anon não lê nem escreve em nenhuma tabela, que o schema `private` não está exposto e que os buckets não são públicos. Ele recusa rodar com a service role.
 
 ## O que precisa de atenção fora do banco
 
