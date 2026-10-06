@@ -3,7 +3,7 @@
 -- =============================================================================
 begin;
 \ir _helpers.psql
-select plan(24);
+select plan(27);
 
 select tests.seed_world();
 select tests.mk_user('menor', 'a.peripatos.test', false);
@@ -88,41 +88,62 @@ select throws_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- Menor de 18
+-- Menor de 18: a conta é apagada na hora, nada fica guardado
 -- ---------------------------------------------------------------------------
-select tests.login('menor');
+create temp table menor as select tests.uid('menor') as id, tests.email('menor') as email;
+grant select on menor to authenticated;
 
+select tests.login('menor');
 select is(
   public.completar_onboarding(
     'menor_user', 'Menor',
     ((now() at time zone 'America/Sao_Paulo')::date - interval '18 years' + interval '1 day')::date
-  ) ->> 'ativo',
-  'false',
-  'quem faz 18 só amanhã completa o onboarding mas NÃO fica ativo'
+  ),
+  '{"onboarding_completo": false, "ativo": false, "menor_de_idade": true, "conta_apagada": true}'::jsonb,
+  'quem faz 18 só amanhã: a RPC avisa que é menor e que a conta foi apagada'
 );
 select throws_ok(
-  $$ insert into public.posts (body) values ('oi') $$, '42501', null,
-  'menor de 18: não posta'
+  $$ insert into public.posts (body) values ('oi') $$, null, null,
+  'menor de 18: não posta (a conta nem existe mais)'
 );
 select throws_ok(
-  format($$ insert into public.follows (followee_id) values (%L) $$, tests.uid('ana')), '42501', null,
+  format($$ insert into public.follows (followee_id) values (%L) $$, tests.uid('ana')), null, null,
   'menor de 18: não segue'
 );
+select is((select count(*) from public.profiles), 0::bigint, 'menor de 18: não enxerga nenhum perfil');
+
+select tests.logout();
 select is(
-  (select array_agg(id) from public.profiles),
-  array[tests.uid('menor')],
-  'menor de 18: só enxerga o próprio perfil'
+  (select (select count(*) from auth.users where id = (select id from menor))
+        + (select count(*) from private.accounts where user_id = (select id from menor))
+        + (select count(*) from public.profiles where id = (select id from menor))),
+  0::bigint,
+  'do menor não ficou nada: nem usuário do Auth, nem RA e data em private.accounts, nem perfil'
 );
 select is(
-  public.conta_status(),
-  '{"onboarding_completo": true, "data_nascimento_informada": true, "maior_de_idade": false, "banido": false, "ativo": false}'::jsonb,
-  'conta_status explica por que a conta não está ativa, sem devolver a data'
+  (select count(*) from public.profiles where username = 'menor_user'), 0::bigint,
+  'o username e o nome enviados no formulário não foram gravados'
+);
+select lives_ok(
+  $$ insert into auth.users (id, email) select gen_random_uuid(), email from menor $$,
+  'nenhum marcador ficou: o mesmo e-mail pode se cadastrar quando fizer 18'
 );
 
-select tests.login('ana');
+-- quem faz 18 exatamente hoje já entra
+select tests.mk_user('aniversariante', 'a.peripatos.test', false);
+select tests.login('aniversariante');
 select is(
-  (select count(*) from public.profiles where id = tests.uid('menor')), 0::bigint,
-  'menor de 18 não aparece para os outros'
+  public.completar_onboarding(
+    'aniversariante', 'Aniversariante',
+    ((now() at time zone 'America/Sao_Paulo')::date - interval '18 years')::date
+  ) ->> 'ativo',
+  'true',
+  'quem faz 18 hoje completa o onboarding e fica ativo'
+);
+select is(
+  public.conta_status() - 'onboarding_completo',
+  '{"data_nascimento_informada": true, "maior_de_idade": true, "banido": false, "ativo": true}'::jsonb,
+  'conta_status não devolve a data, só o resultado'
 );
 
 -- username é único POR instituição: o mesmo nome pode existir em outra

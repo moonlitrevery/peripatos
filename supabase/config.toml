@@ -433,3 +433,7 @@ content_path = "./supabase/templates/otp.html"
 [auth.hook.before_user_created]
 enabled = true
 uri = "pg-functions://postgres/private/hook_before_user_created"
+
+# Re-encode de avatar (remove EXIF/GPS). Só aceita chamadas com JWT válido.
+[functions.processar-avatar]
+verify_jwt = true

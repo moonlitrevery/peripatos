@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+/* Direção visual do Peripatos.
+   - O arco (a colunata) é a forma do app: avatares e marca.
+   - Âmbar existe para UMA coisa: o que duas pessoas têm em comum.
+   - Ameixa só para tags sensíveis. O foco usa a cor da tinta, nunca âmbar. */
+:root {
+  --fundo: #f1f5f3;
+  --papel: #ffffff;
+  --papel-2: #e6edea;
+  --linha: #cfdad6;
+  --tinta: #13262a;
+  --tinta-2: #47595c;
+  --petroleo: #1e5a66;
+  --sobre-petroleo: #ffffff;
+  --comum: #f7e2ae;
+  --sobre-comum: #553800;
+  --ambar: #8f5600;
+  --sensivel: #ebe4f1;
+  --sobre-sensivel: #47305c;
+  --perigo: #a2302a;
+  --foco: #0b1c20;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #0e1618;
+    --papel: #162023;
+    --papel-2: #1e2b2f;
+    --linha: #2c3b3f;
+    --tinta: #e8efed;
+    --tinta-2: #9fb2b3;
+    --petroleo: #82c6d1;
+    --sobre-petroleo: #06252b;
+    --comum: #4b3a10;
+    --sobre-comum: #f5d78f;
+    --ambar: #e6ae48;
+    --sensivel: #2e2639;
+    --sobre-sensivel: #d8c6ea;
+    --perigo: #f19087;
+    --foco: #ffffff;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-fundo: var(--fundo);
+  --color-papel: var(--papel);
+  --color-papel-2: var(--papel-2);
+  --color-linha: var(--linha);
+  --color-tinta: var(--tinta);
+  --color-tinta-2: var(--tinta-2);
+  --color-petroleo: var(--petroleo);
+  --color-sobre-petroleo: var(--sobre-petroleo);
+  --color-comum: var(--comum);
+  --color-sobre-comum: var(--sobre-comum);
+  --color-ambar: var(--ambar);
+  --color-sensivel: var(--sensivel);
+  --color-sobre-sensivel: var(--sobre-sensivel);
+  --color-perigo: var(--perigo);
+  --font-sans: var(--font-texto), Verdana, system-ui, sans-serif;
+  --font-display: var(--font-titulo), "Trebuchet MS", system-ui, sans-serif;
+}
+
+body {
+  background: var(--fundo);
+  color: var(--tinta);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* Foco visível em tudo que é interativo, igual nos dois temas. */
+:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border-[1.5px] border-transparent px-5 text-[0.9375rem] leading-none font-semibold transition-colors;
+  }
+  .btn:disabled, .btn[aria-disabled="true"] {
+    @apply cursor-not-allowed opacity-55;
+  }
+  .btn:focus-visible { border-radius: 999px; }
+  .btn-pri { @apply bg-petroleo text-sobre-petroleo; }
+  .btn-sec { @apply border-petroleo text-petroleo bg-transparent; }
+  .btn-qui { @apply bg-papel-2 text-tinta; }
+  .btn-per { @apply border-perigo text-perigo bg-transparent; }
+  .btn-peq { @apply min-h-9 px-4 text-sm; }
+
+  .chip {
+    @apply bg-papel-2 text-tinta inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] leading-none font-semibold;
+  }
+  .chip-comum { @apply bg-comum text-sobre-comum; }
+  .chip-sens { @apply bg-sensivel text-sobre-sensivel; }
+  .chip-fraco { @apply text-tinta-2 border-linha border bg-transparent font-normal; }
+
+  .cartao {
+    @apply bg-papel border-linha rounded-[20px] border p-4;
+  }
+
+  .campo {
+    @apply bg-papel border-linha text-tinta min-h-12 w-full rounded-xl border-[1.5px] px-3.5 py-3 text-base;
+  }
+  .campo:focus-visible { border-radius: 12px; }
+  .rotulo { @apply mb-1.5 block text-sm font-semibold; }
+  .ajuda { @apply text-tinta-2 mt-1.5 text-[0.8125rem]; }
+  .erro { @apply text-perigo text-sm font-semibold; }
+  .fino { @apply text-tinta-2 text-[0.8125rem]; }
+  .arco { border-radius: 999px 999px 18% 18% / 50% 50% 8% 8%; }
+}

@@ -3,7 +3,7 @@
 -- =============================================================================
 begin;
 \ir _helpers.psql
-select plan(22);
+select plan(24);
 
 select tests.seed_world();
 select tests.add_tag('ana', 't-rock');
@@ -56,6 +56,8 @@ select is(
   'bloqueada não vê as tags sensíveis (eram mutuals)'
 );
 select is((select count(*) from public.blocks), 0::bigint, 'bloqueada não vê a linha do bloqueio');
+select is((select count(*) from public.meus_bloqueios()), 0::bigint, 'meus_bloqueios não revela quem bloqueou a pessoa');
+
 select is(public.afinidade(tests.uid('ana')), null, 'bloqueada: afinidade NULL');
 select is(
   (select count(*) from public.pessoas_parecidas(50) where user_id = tests.uid('ana')), 0::bigint,
@@ -85,6 +87,12 @@ select is(
   'quem bloqueou: some do feed'
 );
 select is((select count(*) from public.blocks), 1::bigint, 'quem bloqueou vê a própria lista de bloqueios');
+select results_eq(
+  $$ select username, display_name from public.meus_bloqueios() $$,
+  $$ values ('bia', 'Bia') $$,
+  'meus_bloqueios devolve o nome de quem EU bloqueei (o perfil em si continua invisível)'
+);
+
 
 -- terceiros não são afetados
 select tests.login('caio');
