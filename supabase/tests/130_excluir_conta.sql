@@ -3,7 +3,7 @@
 -- =============================================================================
 begin;
 \ir _helpers.psql
-select plan(30);
+select plan(31);
 
 select tests.seed_world();
 select tests.add_tag('ana', 't-rock');
@@ -30,9 +30,11 @@ grant select on alvo to authenticated;
 select tests.login('moda');
 select public.ocultar_post((select id from public.posts where body = 'post da ana'), 'conteúdo inadequado');
 
--- ana tem um avatar no storage
+-- ana tem um avatar processado e um original ainda no bucket de entrada
+select tests.logout();
+insert into storage.objects (bucket_id, name) values ('avatars', tests.uid('ana') || '/foto.webp');
 select tests.login('ana');
-insert into storage.objects (bucket_id, name) values ('avatars', auth.uid() || '/foto.webp');
+insert into storage.objects (bucket_id, name) values ('avatar-uploads', auth.uid() || '/original.jpg');
 
 -- ---------------------------------------------------------------------------
 -- Travas
@@ -56,6 +58,11 @@ select is((select count(*) from auth.users where id = (select id from alvo)), 1:
 select tests.login('ana');
 set local storage.allow_delete_query = 'true';
 delete from storage.objects where bucket_id = 'avatars' and name = auth.uid() || '/foto.webp';
+select throws_ok(
+  $$ select public.excluir_conta('EXCLUIR') $$, 'PT409', null,
+  'um original esquecido no bucket de entrada também trava a exclusão'
+);
+delete from storage.objects where bucket_id = 'avatar-uploads' and name = auth.uid() || '/original.jpg';
 
 select lives_ok(
   $$ select public.excluir_conta('EXCLUIR') $$,
@@ -89,7 +96,7 @@ select is(
 select is((select count(*) from public.reports), 0::bigint, '...inclusive a que ela fez contra o post de outra pessoa');
 select is((select count(*) from public.tag_requests where user_id = (select id from alvo)), 0::bigint, 'pedidos de tag apagados');
 select is(
-  (select count(*) from storage.objects where bucket_id = 'avatars' and name like (select id from alvo) || '/%'), 0::bigint,
+  (select count(*) from storage.objects where name like (select id from alvo) || '/%'), 0::bigint,
   'nenhum arquivo de avatar restou'
 );
 select is((select count(*) from private.rate_limit_events where user_id = (select id from alvo)), 0::bigint, 'contadores de rate limit apagados');
