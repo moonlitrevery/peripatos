@@ -184,6 +184,16 @@ pnpm exec supabase functions deploy processar-avatar
   pnpm exec supabase functions deploy processar-avatar
   ```
 
+  O valor é a **origem inteira**: com `https://`, sem barra no fim, e do endereço que as pessoas realmente usam (se houver domínio próprio, é ele, não o `.vercel.app`). Confira como o navegador confere:
+
+  ```bash
+  curl -s -o /dev/null -D - -X OPTIONS https://<ref>.supabase.co/functions/v1/processar-avatar \
+    -H "Origin: https://<projeto>.vercel.app" -H "Access-Control-Request-Method: POST" | grep -i access-control-allow-origin
+  # esperado: access-control-allow-origin: https://<projeto>.vercel.app
+  ```
+
+  Se esse cabeçalho não for idêntico ao endereço do app, **todo envio de foto falha** com "Não foi possível processar a foto".
+
 - Ela recebe `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` do próprio Supabase. Você não cadastra nenhum segredo.
 - [ ] **[painel]** *Edge Functions*: `processar-avatar` aparece como ativa, com *Verify JWT* ligado.
 

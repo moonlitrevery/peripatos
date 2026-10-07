@@ -28,8 +28,24 @@ const TAMANHO_MAXIMO = 2 * 1024 * 1024;
 // `supabase secrets set`. Sem ele (ambiente local) qualquer origem é aceita.
 // Isto é defesa em profundidade: a função já exige o token do usuário no
 // cabeçalho Authorization, que nenhum outro site consegue enviar por ele.
+//
+// O navegador compara a origem inteira, com protocolo e sem barra no fim.
+// Um valor como "peripatos.vercel.app" ou "https://peripatos.vercel.app/"
+// bloquearia TODOS os envios de foto, então o valor é normalizado aqui.
+function origemPermitida(): string {
+  const bruto = (Deno.env.get("ORIGEM_DO_APP") ?? "").trim();
+  if (!bruto) return "*";
+  try {
+    return new URL(/^https?:\/\//i.test(bruto) ? bruto : `https://${bruto}`).origin;
+  } catch {
+    // Valor ilegível: melhor aceitar qualquer origem (a autorização é o
+    // token) do que quebrar o envio de foto para todo mundo.
+    return "*";
+  }
+}
+
 const cors = {
-  "Access-Control-Allow-Origin": Deno.env.get("ORIGEM_DO_APP") || "*",
+  "Access-Control-Allow-Origin": origemPermitida(),
   "Vary": "Origin",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",

@@ -262,6 +262,17 @@ titulo("6. Edge Function processar-avatar");
   if (r.status === 401) ok("recusa quem não está logado (401)");
   else if (r.status === 404) falha("a função não está publicada (404): rode `supabase functions deploy processar-avatar`");
   else falha(`sem login a função respondeu: ${resumo(r)}`);
+
+  // CORS: um valor que não é uma origem válida bloqueia todo envio de foto.
+  const pre = await fetch(`${URL_BASE}/functions/v1/processar-avatar`, {
+    method: "OPTIONS",
+    headers: { Origin: "https://verificacao.invalid", "Access-Control-Request-Method": "POST" },
+    signal: AbortSignal.timeout(20_000),
+  });
+  const origem = pre.headers.get("access-control-allow-origin");
+  if (origem === "*") aviso("a função aceita qualquer origem (ORIGEM_DO_APP não definido). Em produção, restrinja ao endereço do app");
+  else if (origem && /^https:\/\/[^/]+$/.test(origem)) ok(`CORS restrito a ${origem} (confira que é o endereço do app)`);
+  else falha(`CORS da função com origem inválida: "${origem}". Precisa ser a origem inteira, com https:// e sem barra no fim; do jeito que está, todo envio de foto falha`);
 }
 
 if (opcoes.has("--testar-hook")) {
