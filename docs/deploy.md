@@ -61,6 +61,13 @@ pnpm exec supabase link --project-ref <ref>     # pede a senha do banco
 
 ## 3. Aplicar as migrations — [comando]
 
+> **O banco e o app têm que sair do mesmo commit.** O `db push` aplica as migrations da pasta em que você está; o Vercel publica o branch de produção (`main`). Se a sua pasta estiver num branch à frente de `main`, o banco fica mais novo que o app, e o app no ar passa a falhar (foi o que aconteceu no primeiro deploy: o banco exigia o aceite dos termos e o app publicado ainda não tinha a caixa). Antes de qualquer `db push`:
+>
+> ```bash
+> git checkout main && git pull
+> git status          # limpo, e "Your branch is up to date with 'origin/main'"
+> ```
+
 ```bash
 pnpm exec supabase db push --dry-run    # mostra o que seria aplicado, sem aplicar
 pnpm exec supabase db push
@@ -177,6 +184,16 @@ pnpm exec supabase functions deploy processar-avatar
   pnpm exec supabase functions deploy processar-avatar
   ```
 
+  O valor é a **origem inteira**: com `https://`, sem barra no fim, e do endereço que as pessoas realmente usam (se houver domínio próprio, é ele, não o `.vercel.app`). Confira como o navegador confere:
+
+  ```bash
+  curl -s -o /dev/null -D - -X OPTIONS https://<ref>.supabase.co/functions/v1/processar-avatar \
+    -H "Origin: https://<projeto>.vercel.app" -H "Access-Control-Request-Method: POST" | grep -i access-control-allow-origin
+  # esperado: access-control-allow-origin: https://<projeto>.vercel.app
+  ```
+
+  Se esse cabeçalho não for idêntico ao endereço do app, **todo envio de foto falha** com "Não foi possível processar a foto".
+
 - Ela recebe `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` do próprio Supabase. Você não cadastra nenhum segredo.
 - [ ] **[painel]** *Edge Functions*: `processar-avatar` aparece como ativa, com *Verify JWT* ligado.
 
@@ -290,4 +307,6 @@ O que fazer, em ordem de confiança:
 | Os Termos ou a Política | Nova versão em `src/lib/legal.ts` **e** numa migration que troca `private.termos_versao_atual()`, na mesma entrega |
 | A Edge Function | **[comando]** `pnpm exec supabase functions deploy processar-avatar` |
 | O app | merge em `main`; o Vercel faz o deploy |
+| App **e** migration na mesma entrega | merge em `main`, depois `git checkout main && git pull`, e só então o `db push`. Entre os dois há uma janela em que app e banco não combinam: faça em horário de pouco uso |
+| Quem estava com o app aberto durante um deploy | vê "O Peripatos foi atualizado. Recarregue a página e tente de novo." ao enviar um formulário antigo. É esperado |
 | `config.toml` (auth, limites, template) | **[painel]** replicar à mão, pela tabela do início |
