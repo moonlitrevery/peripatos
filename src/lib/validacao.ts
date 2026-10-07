@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { falha, type Resultado } from "@/lib/erros";
+import { falha, type Resultado } from "./erros";
 
 // Validação no servidor de tudo o que chega por server action ou route
 // handler. O navegador manda o que quiser: os tipos do TypeScript não existem
@@ -8,6 +8,14 @@ import { falha, type Resultado } from "@/lib/erros";
 // Isto vem ANTES do banco, não no lugar dele. As constraints, o RLS e as RPCs
 // continuam sendo quem decide; aqui se recusa cedo o que nem tem a forma certa
 // e se devolve uma mensagem que a pessoa entende.
+
+// Mensagem para tudo o que não tem mensagem própria. As regras abaixo têm
+// texto em português para os erros que a pessoa consegue corrigir; o que cai
+// aqui é dado com a FORMA errada (campo faltando, tipo trocado), e isso quase
+// sempre é uma aba aberta antes de uma atualização do app, mandando o
+// formulário antigo. Sem isto vazaria o texto padrão da biblioteca, em inglês
+// ("Invalid input: expected string, received undefined").
+z.config({ customError: () => "O Peripatos foi atualizado. Recarregue a página e tente de novo." });
 
 const semControle = (s: string) => !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(s);
 
@@ -122,5 +130,8 @@ export function validar<T>(
 ): { ok: true; dado: T } | { ok: false; falha: Resultado<never> } {
   const r = esquema.safeParse(dado);
   if (r.success) return { ok: true, dado: r.data };
-  return { ok: false, falha: falha(r.error.issues[0]?.message ?? "Dados inválidos.") };
+  // Um erro com mensagem própria (que a pessoa consegue corrigir) vem antes
+  // do genérico de forma errada.
+  const mensagens = r.error.issues.map((i) => i.message);
+  return { ok: false, falha: falha(mensagens[0] ?? "Dados inválidos.") };
 }

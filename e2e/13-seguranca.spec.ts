@@ -102,3 +102,30 @@ test.describe("Segurança", () => {
     rmSync(path.join(__dirname, ".auth", "beto.json"), { force: true });
   });
 });
+
+// Uma aba aberta antes de um deploy manda o formulário antigo. O servidor
+// recusa, e a mensagem precisa dizer o que fazer, em português, e não o texto
+// padrão da biblioteca de validação.
+test("nenhuma regra de validação deixa vazar a mensagem padrão em inglês", async () => {
+  const v = await import("../src/lib/validacao");
+  const { z } = await import("zod");
+  const formularioAntigo = { username: "abc", displayName: "Abc", nascimento: "2000-01-01", bio: "" };
+  const Dados = z.object({ username: v.username, bio: v.bio, termosAceitos: z.string().nullable(), consentiu: z.boolean() });
+  const r = v.validar(Dados, formularioAntigo);
+  expect(r.ok).toBe(false);
+  if (!r.ok && !r.falha.ok) {
+    expect(r.falha.erro).toBe("O Peripatos foi atualizado. Recarregue a página e tente de novo.");
+    expect(r.falha.erro).not.toMatch(/invalid|expected|received|undefined/i);
+  }
+  // As regras com mensagem própria continuam com a delas.
+  const curto = v.validar(v.username, "a");
+  expect(!curto.ok && !curto.falha.ok && curto.falha.erro).toContain("3 a 20 caracteres");
+  // E nenhum tipo errado, em nenhuma regra, produz texto em inglês.
+  for (const [nome, regra] of Object.entries(v)) {
+    if (typeof regra !== "object" || regra === null || !("safeParse" in regra)) continue;
+    for (const lixo of [undefined, null, 42, {}, []]) {
+      const t = v.validar(regra as never, lixo);
+      if (!t.ok && !t.falha.ok) expect(t.falha.erro, `${nome} com ${JSON.stringify(lixo)}`).not.toMatch(/invalid input|expected|received/i);
+    }
+  }
+});
