@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { falha, mensagemDeErro, ok, type Resultado } from "@/lib/erros";
 import { createClient } from "@/lib/supabase/server";
+import * as v from "@/lib/validacao";
+import { z } from "zod";
 
 // Cada ação chama a RPC correspondente com a sessão de quem clicou. É a RPC
 // que confere se a pessoa é staff daquela instituição e que grava o registro
@@ -24,18 +26,32 @@ async function chamar(fn: Rpc, args: Record<string, unknown>): Promise<Resultado
   return ok(undefined);
 }
 
-export async function ocultarPost(postId: string, motivo: string) {
-  return chamar("ocultar_post", { p_post_id: postId, p_motivo: motivo });
+// Cada ação valida a forma dos argumentos antes de chamar o banco. Quem
+// decide se a pessoa PODE é a RPC (cargo na instituição + sessão aal2).
+
+export async function ocultarPost(postId: unknown, motivo: unknown) {
+  const r = v.validar(z.object({ id: v.uuid, motivo: v.motivoDeModeracao }), { id: postId, motivo });
+  if (!r.ok) return r.falha;
+  return chamar("ocultar_post", { p_post_id: r.dado.id, p_motivo: r.dado.motivo });
 }
 
-export async function banir(userId: string, motivo: string) {
-  return chamar("banir_usuario", { p_user_id: userId, p_motivo: motivo });
+export async function banir(userId: unknown, motivo: unknown) {
+  const r = v.validar(z.object({ id: v.uuid, motivo: v.motivoDeModeracao }), { id: userId, motivo });
+  if (!r.ok) return r.falha;
+  return chamar("banir_usuario", { p_user_id: r.dado.id, p_motivo: r.dado.motivo });
 }
 
-export async function moderarAvatar(userId: string, aprovar: boolean, motivo: string) {
-  return chamar("moderar_avatar", { p_user_id: userId, p_aprovar: aprovar, p_motivo: motivo });
+export async function moderarAvatar(userId: unknown, aprovar: unknown, motivo: unknown) {
+  const r = v.validar(z.object({ id: v.uuid, aprovar: z.boolean(), motivo: v.motivoDeModeracao }), { id: userId, aprovar, motivo });
+  if (!r.ok) return r.falha;
+  return chamar("moderar_avatar", { p_user_id: r.dado.id, p_aprovar: r.dado.aprovar, p_motivo: r.dado.motivo });
 }
 
-export async function resolverDenuncia(reportId: string, status: "resolvida" | "rejeitada", nota: string) {
-  return chamar("resolver_denuncia", { p_report_id: reportId, p_status: status, p_nota: nota });
+export async function resolverDenuncia(reportId: unknown, status: unknown, nota: unknown) {
+  const r = v.validar(
+    z.object({ id: v.uuid, status: z.enum(["resolvida", "rejeitada"]), nota: v.motivoDeModeracao }),
+    { id: reportId, status, nota },
+  );
+  if (!r.ok) return r.falha;
+  return chamar("resolver_denuncia", { p_report_id: r.dado.id, p_status: r.dado.status, p_nota: r.dado.nota });
 }

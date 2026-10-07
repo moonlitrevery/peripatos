@@ -82,16 +82,20 @@ type Props = {
   /** Usado para escolher um avatar pronto estável quando não há nenhum. */
   semente: string;
   tamanho?: number;
+  /** Nome de quem aparece na foto. Vira o texto alternativo. */
+  nome?: string | null;
 };
 
-// O avatar é decorativo: o nome da pessoa sempre aparece ao lado em texto.
-export function Avatar({ url, preset, semente, tamanho = 44 }: Props) {
+// Foto de verdade tem texto alternativo com o nome da pessoa. Os avatares
+// prontos são desenhos abstratos e ficam fora da leitura de tela: o nome
+// sempre aparece ao lado em texto, e "figura abstrata" só faria barulho.
+export function Avatar({ url, preset, semente, tamanho = 44, nome }: Props) {
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- URL assinada e temporária do Storage
       <img
         src={url}
-        alt=""
+        alt={nome ? `Foto de ${nome}` : "Foto de perfil"}
         width={tamanho}
         height={tamanho * 1.25}
         className="arco bg-papel-2 shrink-0 object-cover"

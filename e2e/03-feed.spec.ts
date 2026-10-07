@@ -37,12 +37,12 @@ test.describe("Início", () => {
     await expect(dialogo.getByText("Powered by GIPHY")).toBeVisible();
     await dialogo.getByRole("button", { name: "Gato de teste" }).click();
     await expect(dialogo).toBeHidden();
-    await expect(page.getByAltText("GIF escolhido")).toBeVisible();
+    await expect(page.getByAltText("GIF escolhido: Gato de teste")).toBeVisible();
 
     await page.getByRole("button", { name: "Publicar" }).click();
     const noInicio = page.getByRole("article").filter({ hasText: texto });
     await expect(noInicio).toBeVisible();
-    await expect(noInicio.getByAltText("GIF", { exact: true })).toHaveAttribute("src", `https://i.giphy.com/${GIF_ID}.webp`);
+    await expect(noInicio.getByAltText("GIF: Gato de teste", { exact: true })).toHaveAttribute("src", `https://i.giphy.com/${GIF_ID}.webp`);
     await expect(page.getByLabel("O que você quer conversar?")).toHaveValue("");
 
     // Recarregando do banco: o post existe e a URL do GIF foi remontada a
@@ -50,7 +50,7 @@ test.describe("Início", () => {
     await page.goto("/u/lia");
     const noPerfil = page.getByRole("article").filter({ hasText: texto });
     await expect(noPerfil).toBeVisible();
-    await expect(noPerfil.getByAltText("GIF", { exact: true })).toHaveAttribute("src", `https://i.giphy.com/${GIF_ID}.webp`);
+    await expect(noPerfil.getByAltText("GIF: Gato de teste", { exact: true })).toHaveAttribute("src", `https://i.giphy.com/${GIF_ID}.webp`);
 
     await contexto.close();
   });

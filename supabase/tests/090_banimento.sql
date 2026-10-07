@@ -26,12 +26,12 @@ select throws_ok(
   format($$ select public.banir_usuario(%L, 'não fui com a cara') $$, tests.uid('bia')),
   'PT403', null, 'usuária comum não bane'
 );
-select tests.login('modb');
+select tests.login_mfa('modb');
 select throws_ok(
   format($$ select public.banir_usuario(%L, 'cruzando instituição') $$, tests.uid('bia')),
   'PT403', null, 'staff de outra instituição não bane'
 );
-select tests.login('moda');
+select tests.login_mfa('moda');
 select throws_ok(
   $$ select public.banir_usuario(auth.uid(), 'auto') $$,
   'PT400', null, 'ninguém bane a si mesmo'
@@ -121,17 +121,17 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 -- Desbanir: só admin
 -- ---------------------------------------------------------------------------
-select tests.login('adma');
+select tests.login_mfa('adma');
 select lives_ok(
   format($$ select public.banir_usuario(%L, 'spam em massa') $$, tests.uid('caio')),
   'admin bane'
 );
-select tests.login('moda');
+select tests.login_mfa('moda');
 select throws_ok(
   format($$ select public.desbanir_usuario(%L, 'pediu desculpas') $$, tests.uid('caio')),
   'PT403', null, 'moderador não desbane'
 );
-select tests.login('adma');
+select tests.login_mfa('adma');
 select lives_ok(
   format($$ select public.desbanir_usuario(%L, 'recurso aceito') $$, tests.uid('caio')),
   'admin desbane'

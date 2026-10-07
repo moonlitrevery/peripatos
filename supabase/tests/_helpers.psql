@@ -56,7 +56,12 @@ begin
           v_email, now(), now());
 
   if p_onboard then
-    update private.accounts set birth_date = p_birth where user_id = v_id;
+    -- A data não é guardada: só o fato de a maioridade ter sido verificada.
+    update private.accounts
+       set maioridade_verificada_em = case when p_birth <= private.adult_cutoff() then now() end,
+           termos_versao = private.termos_versao_atual(),
+           termos_aceitos_em = now()
+     where user_id = v_id;
     update public.profiles
        set username = p_alias, display_name = initcap(p_alias), onboarding_completo = true
      where id = v_id;
@@ -104,6 +109,17 @@ begin
     (jsonb_build_object('sub', tests.uid(p_alias), 'role', 'authenticated') || p_extra)::text,
     true
   );
+end
+$$;
+
+-- Como tests.login, mas com o segundo fator confirmado (sessão aal2). É o
+-- único jeito de a staff agir: ver 140_mfa_staff.sql.
+create function tests.login_mfa(p_alias text, p_extra jsonb default '{}'::jsonb)
+returns void
+language plpgsql
+as $$
+begin
+  perform tests.login(p_alias, jsonb_build_object('aal', 'aal2') || p_extra);
 end
 $$;
 
@@ -155,6 +171,10 @@ language plpgsql
 as $$
 begin
   if (select t.is_sensitive from public.tags t where t.slug = p_slug) then
+    -- o banco recusa tag sensível sem o consentimento específico registrado
+    update private.accounts
+       set sensivel_consentido_em = coalesce(sensivel_consentido_em, now())
+     where user_id = tests.uid(p_alias);
     insert into public.profile_sensitive_tags (user_id, tag_id) values (tests.uid(p_alias), tests.tag(p_slug));
   else
     insert into public.profile_tags (user_id, tag_id) values (tests.uid(p_alias), tests.tag(p_slug));

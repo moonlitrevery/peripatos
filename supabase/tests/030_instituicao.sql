@@ -66,7 +66,7 @@ select throws_ok(
 );
 
 -- staff de B também não atravessa
-select tests.login('modb');
+select tests.login_mfa('modb');
 select is(
   (select count(*) from public.posts where author_id = tests.uid('ana')), 0::bigint,
   'staff de outra instituição não lê posts'

@@ -68,7 +68,11 @@ from auth.users u
 where u.id::text like '00000000-0000-4000-8000-%';
 
 update private.accounts a
-   set birth_date = date '2001-04-10' + (s.n * 37)
+   set maioridade_verificada_em = now(),
+       termos_versao = private.termos_versao_atual(),
+       termos_aceitos_em = now(),
+       -- quem tem tag sensível no seed já deu o consentimento específico
+       sensivel_consentido_em = case when cardinality(s.sensitive) > 0 then now() end
   from seed_users s
  where a.user_id = ('00000000-0000-4000-8000-' || lpad(s.n::text, 12, '0'))::uuid;
 

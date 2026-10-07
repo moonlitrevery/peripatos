@@ -31,3 +31,14 @@ export const meuCargo = cache(async () => {
   const { data } = await supabase.from("staff_roles").select("role").eq("user_id", user.id).maybeSingle();
   return data?.role ?? null;
 });
+
+// Nível da sessão segundo o próprio token: "aal2" quando o segundo fator foi
+// confirmado neste login. getClaims() confere a assinatura do token em vez de
+// confiar no cookie. Serve só para a interface decidir que tela mostrar: quem
+// exige aal2 de verdade é o banco.
+export const nivelDaSessao = cache(async (): Promise<"aal1" | "aal2" | null> => {
+  const { supabase } = await exigirSessao();
+  const { data } = await supabase.auth.getClaims();
+  const aal = data?.claims.aal;
+  return aal === "aal2" ? "aal2" : aal === "aal1" ? "aal1" : null;
+});

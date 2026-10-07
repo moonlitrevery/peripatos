@@ -1,12 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
+import { montarCsp } from "@/lib/csp";
 import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 
 // Roda antes de toda página (no Next 16, `proxy` é o novo nome do middleware):
 //   1. renova a sessão e regrava os cookies;
 //   2. sem login            -> /entrar
 //   3. sem onboarding       -> /onboarding
+//   4. gera o nonce e a Content-Security-Policy desta resposta.
 // Isto é conforto de navegação. Quem protege os dados é o RLS: uma requisição
 // que escape daqui continua sem conseguir ler nada.
 
@@ -17,6 +19,19 @@ function ehPublica(caminho: string) {
 }
 
 export async function proxy(request: NextRequest) {
+  // Um nonce novo por resposta. O Next lê a CSP do cabeçalho da REQUISIÇÃO
+  // para saber qual nonce pôr nos próprios scripts; o navegador lê a da
+  // resposta. Por isso ela vai nos dois.
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const csp = montarCsp(nonce);
+  request.headers.set("x-nonce", nonce);
+  request.headers.set("Content-Security-Policy", csp);
+
+  const comCsp = (r: NextResponse) => {
+    r.headers.set("Content-Security-Policy", csp);
+    return r;
+  };
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
@@ -45,15 +60,15 @@ export async function proxy(request: NextRequest) {
     const r = NextResponse.redirect(url);
     // leva junto os cookies de sessão renovados
     for (const c of response.cookies.getAll()) r.cookies.set(c);
-    return r;
+    return comCsp(r);
   };
 
   if (!user) {
-    return ehPublica(caminho) ? response : redirecionar("/entrar");
+    return ehPublica(caminho) ? comCsp(response) : redirecionar("/entrar");
   }
 
   if (caminho === "/entrar") return redirecionar("/");
-  if (ehPublica(caminho)) return response;
+  if (ehPublica(caminho)) return comCsp(response);
 
   const { data: perfil } = await supabase
     .from("profiles")
@@ -65,7 +80,7 @@ export async function proxy(request: NextRequest) {
   if (!completo && caminho !== "/onboarding") return redirecionar("/onboarding");
   if (completo && caminho === "/onboarding") return redirecionar("/");
 
-  return response;
+  return comCsp(response);
 }
 
 export const config = {

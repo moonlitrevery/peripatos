@@ -60,10 +60,10 @@ select tests.login('caio');
 select is((select count(*) from public.reports), 0::bigint, 'usuário comum não lê denúncias (nem as contra ele)');
 select is((select count(*) from public.minhas_denuncias()), 0::bigint, 'a RPC não mostra denúncias dos outros');
 
-select tests.login('moda');
+select tests.login_mfa('moda');
 select is((select count(*) from public.reports), 2::bigint, 'staff da mesma instituição lê as denúncias');
 
-select tests.login('modb');
+select tests.login_mfa('modb');
 select is((select count(*) from public.reports), 0::bigint, 'staff de OUTRA instituição não lê');
 
 -- ---------------------------------------------------------------------------
@@ -71,7 +71,8 @@ select is((select count(*) from public.reports), 0::bigint, 'staff de OUTRA inst
 -- ---------------------------------------------------------------------------
 select tests.logout();
 create function tests.report_post() returns uuid language sql stable security definer set search_path = '' as
-  $$ select id from public.reports where post_id is not null $$;
+  -- só a denúncia deste teste: num banco que já rodou o e2e existem outras
+  $$ select id from public.reports where post_id = tests.post_bia() $$;
 grant execute on function tests.report_post() to authenticated;
 
 select tests.login('ana');
@@ -84,7 +85,7 @@ select throws_ok(
   '42501', null, 'ninguém altera denúncia direto na tabela'
 );
 
-select tests.login('modb');
+select tests.login_mfa('modb');
 select throws_ok(
   format($$ select public.resolver_denuncia(%L, 'rejeitada', 'cruzando instituição') $$, tests.report_post()),
   'PT403', null, 'staff de outra instituição não resolve'
@@ -98,7 +99,7 @@ select throws_ok(
 );
 select is((select count(*) from public.reports), 0::bigint, '...nem acesso de leitura');
 
-select tests.login('moda');
+select tests.login_mfa('moda');
 select throws_ok(
   format($$ select public.resolver_denuncia(%L, 'resolvida', '  ') $$, tests.report_post()),
   'PT400', null, 'resolver exige justificativa'
@@ -123,7 +124,7 @@ select throws_ok(
   'PT403', null, 'usuária comum não oculta post'
 );
 
-select tests.login('moda');
+select tests.login_mfa('moda');
 select lives_ok(
   format($$ select public.ocultar_post(%L, 'assédio confirmado') $$, tests.post_bia()),
   'moderador oculta o post'
@@ -147,7 +148,7 @@ select is(
 -- ---------------------------------------------------------------------------
 -- moderation_actions: toda ação fica registrada; ninguém escreve direto
 -- ---------------------------------------------------------------------------
-select tests.login('moda');
+select tests.login_mfa('moda');
 select results_eq(
   $$ select action::text, actor_id, reason from public.moderation_actions order by id $$,
   format($$ values ('resolver_denuncia', %L::uuid, 'post ocultado'),
@@ -157,10 +158,10 @@ select results_eq(
 
 select tests.login('ana');
 select is((select count(*) from public.moderation_actions), 0::bigint, 'usuária comum não lê a trilha de auditoria');
-select tests.login('modb');
+select tests.login_mfa('modb');
 select is((select count(*) from public.moderation_actions), 0::bigint, 'staff de outra instituição não lê a trilha');
 
-select tests.login('adma');
+select tests.login_mfa('adma');
 select throws_ok(
   format($$ insert into public.moderation_actions (institution_id, actor_id, action, reason)
             select institution_id, id, 'banir_usuario', 'registro forjado' from public.profiles where id = %L $$,
@@ -186,13 +187,13 @@ select throws_ok(
   $$ select public.definir_cargo(auth.uid(), 'admin', 'autopromoção') $$,
   'PT403', null, 'usuária comum não se promove'
 );
-select tests.login('moda');
+select tests.login_mfa('moda');
 select throws_ok(
   format($$ select public.definir_cargo(%L, 'moderador', 'moderador nomeando') $$, tests.uid('caio')),
   'PT403', null, 'moderador não concede cargo (só admin)'
 );
 
-select tests.login('adma');
+select tests.login_mfa('adma');
 select throws_ok(
   format($$ select public.definir_cargo(%L, 'moderador', 'outra instituição') $$, tests.uid('zeca')),
   'PT403', null, 'admin não concede cargo em outra instituição'
@@ -218,7 +219,7 @@ select is(
   'colegas da instituição veem o cargo (título do perfil)'
 );
 
-select tests.login('adma');
+select tests.login_mfa('adma');
 select lives_ok(
   format($$ select public.remover_cargo(%L, 'fim do período') $$, tests.uid('caio')),
   'admin remove cargo'

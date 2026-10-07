@@ -12,6 +12,8 @@ export type ItemFeed = {
   preset: number | null;
   corpo: string;
   gifId: string | null;
+  /** Título do GIF no Giphy, usado como texto alternativo. */
+  gifAlt: string | null;
   criadoEm: string;
   editado: boolean;
   /** "descoberta" = autor sem nenhum gosto em comum; "proprio" = acabou de publicar. */
@@ -40,6 +42,7 @@ export async function paginaDoFeed(supabase: SupabaseClient<Database>, cursor: s
     preset: l.avatar_preset,
     corpo: l.body,
     gifId: l.gif_id,
+    gifAlt: l.gif_alt,
     criadoEm: l.created_at,
     editado: l.edited_at !== null,
     origem: l.origem === "descoberta" ? "descoberta" : "afinidade",

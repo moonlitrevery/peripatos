@@ -17,7 +17,7 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
   const [itens, setItens] = useState(inicial);
   const [cursor, setCursor] = useState(cursorInicial);
   const [texto, setTexto] = useState("");
-  const [gif, setGif] = useState<{ id: string; previa: string } | null>(null);
+  const [gif, setGif] = useState<{ id: string; previa: string; titulo: string } | null>(null);
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [erroLista, setErroLista] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
     if (vazio || texto.length > LIMITE) return;
     setErro(null);
     iniciarPublicacao(async () => {
-      const r = await publicar(texto, gif?.id ?? null);
+      const r = await publicar(texto, gif ? { id: gif.id, alt: gif.titulo } : null);
       if (!r.ok) {
         setErro(r.erro);
         return;
@@ -48,6 +48,7 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
           preset: eu.preset,
           corpo: texto.trim(),
           gifId: gif?.id ?? null,
+          gifAlt: r.dados.gifAlt,
           criadoEm: r.dados.criadoEm,
           editado: false,
           origem: "proprio",
@@ -119,7 +120,7 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
         {gif && (
           <div className="relative self-start">
             {/* eslint-disable-next-line @next/next/no-img-element -- GIF escolhido, servido pelo Giphy */}
-            <img src={urlDoGif(gif.id)} alt="GIF escolhido" referrerPolicy="no-referrer" className="max-h-48 rounded-2xl" />
+            <img src={urlDoGif(gif.id)} alt={`GIF escolhido: ${gif.titulo}`} referrerPolicy="no-referrer" className="max-h-48 rounded-2xl" />
             <button type="button" className="btn btn-qui btn-peq absolute top-2 right-2" onClick={() => setGif(null)}>
               Tirar GIF
             </button>

@@ -27,7 +27,7 @@ create temp table alvo as select tests.uid('ana') as id, tests.email('ana') as e
 grant select on alvo to authenticated;
 
 -- a moderação agiu sobre a ana antes
-select tests.login('moda');
+select tests.login_mfa('moda');
 select public.ocultar_post((select id from public.posts where body = 'post da ana'), 'conteúdo inadequado');
 
 -- ana tem um avatar processado e um original ainda no bucket de entrada
@@ -93,7 +93,11 @@ select is(
   (select count(*) from public.reports where (select id from alvo) in (reporter_id, profile_id)), 0::bigint,
   'denúncias feitas por ela e contra o perfil dela apagadas'
 );
-select is((select count(*) from public.reports), 0::bigint, '...inclusive a que ela fez contra o post de outra pessoa');
+-- só a denúncia deste teste: num banco que já rodou o e2e existem outras
+select is(
+  (select count(*) from public.reports where post_id = (select id from public.posts where body = 'post da bia')), 0::bigint,
+  '...inclusive a que ela fez contra o post de outra pessoa'
+);
 select is((select count(*) from public.tag_requests where user_id = (select id from alvo)), 0::bigint, 'pedidos de tag apagados');
 select is(
   (select count(*) from storage.objects where name like (select id from alvo) || '/%'), 0::bigint,
@@ -133,7 +137,7 @@ select lives_ok(
 -- ---------------------------------------------------------------------------
 create temp table banido as select tests.uid('caio') as id, tests.email('caio') as email;
 grant select on banido to authenticated;
-select tests.login('moda');
+select tests.login_mfa('moda');
 select public.banir_usuario(tests.uid('caio'), 'spam em massa');
 
 select tests.login('caio');
