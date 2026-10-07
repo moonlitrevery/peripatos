@@ -20,7 +20,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
         <Marca tamanho={44} />
         <h1 className="text-4xl leading-[1.05] font-bold">Peripatos</h1>
         <p className="text-tinta-2">
-          Gente da sua universidade que gosta do que você gosta. Para maiores de 18.
+          Gente da sua universidade que gosta do que você gosta.
         </p>
       </header>
 
