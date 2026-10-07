@@ -31,20 +31,26 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
   if (!perfil) notFound();
 
   const ehMeu = perfil.id === user.id;
-  const par = `and(follower_id.eq.${user.id},followee_id.eq.${perfil.id}),and(follower_id.eq.${perfil.id},followee_id.eq.${user.id})`;
+  // Duas consultas com .eq(), e não um .or() montado com texto: filtro do
+  // PostgREST escrito por concatenação é injeção de filtro esperando um
+  // valor que venha do usuário.
+  const segue = (de: string, para: string) =>
+    supabase.from("follows").select("follower_id").eq("follower_id", de).eq("followee_id", para).limit(1);
+  const ninguem = Promise.resolve({ data: [] as { follower_id: string }[] });
 
-  const [tags, sensiveis, minhas, minhasSens, follows, cargo, posts, urls] = await Promise.all([
+  const [tags, sensiveis, minhas, minhasSens, euSigo, meSegue, cargo, posts, urls] = await Promise.all([
     supabase.from("profile_tags").select(TAGS).eq("user_id", perfil.id),
     // Tags sensíveis: a consulta é sempre feita; o banco só devolve linhas
     // para o dono e para mutuals. Aqui não existe "se for mutual, mostre".
     supabase.from("profile_sensitive_tags").select(TAGS).eq("user_id", perfil.id),
     supabase.from("profile_tags").select("tag_id").eq("user_id", user.id),
     supabase.from("profile_sensitive_tags").select("tag_id").eq("user_id", user.id),
-    ehMeu ? Promise.resolve({ data: [] }) : supabase.from("follows").select("follower_id").or(par),
+    ehMeu ? ninguem : segue(user.id, perfil.id),
+    ehMeu ? ninguem : segue(perfil.id, user.id),
     supabase.from("staff_roles").select("role").eq("user_id", perfil.id).maybeSingle(),
     supabase
       .from("posts")
-      .select("id, body, gif_id, created_at, edited_at")
+      .select("id, body, gif_id, gif_alt, created_at, edited_at")
       .eq("author_id", perfil.id)
       .order("created_at", { ascending: false })
       .limit(30),
@@ -56,8 +62,8 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
   const comuns = ehMeu ? [] : doPerfil.filter((t) => meus.has(t.id));
   const demais = ehMeu ? doPerfil : doPerfil.filter((t) => !meus.has(t.id));
 
-  const seguindo = (follows.data ?? []).some((f) => f.follower_id === user.id);
-  const segueVoce = (follows.data ?? []).some((f) => f.follower_id === perfil.id);
+  const seguindo = (euSigo.data ?? []).length > 0;
+  const segueVoce = (meSegue.data ?? []).length > 0;
   const avatarUrl = perfil.avatar_path ? (urls.get(perfil.avatar_path) ?? null) : null;
   const nome = perfil.display_name ?? "";
 
@@ -65,7 +71,7 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-4">
         <div className="flex items-end gap-4">
-          <Avatar url={avatarUrl} preset={perfil.avatar_preset} semente={perfil.id} tamanho={84} />
+          <Avatar url={avatarUrl} preset={perfil.avatar_preset} semente={perfil.id} tamanho={84} nome={nome} />
           <div className="min-w-0 flex-1 pb-1">
             <h1 className="text-3xl leading-tight font-bold break-words">{nome}</h1>
             <p className="text-tinta-2">@{perfil.username}</p>
@@ -153,6 +159,7 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
                     preset: perfil.avatar_preset,
                     corpo: p.body,
                     gifId: p.gif_id,
+                    gifAlt: p.gif_alt,
                     criadoEm: p.created_at,
                     editado: p.edited_at !== null,
                     origem: "afinidade",

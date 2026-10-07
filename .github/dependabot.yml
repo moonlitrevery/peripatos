@@ -1,0 +1,37 @@
+# Atualizações de dependências, uma vez por semana.
+# Correções de segurança chegam fora desse ritmo, assim que o GitHub as conhece
+# (ligue "Dependabot security updates" em Settings → Code security).
+version: 2
+updates:
+  - package-ecosystem: npm # cobre o pnpm (lê o pnpm-lock.yaml)
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    groups:
+      # Um PR só para o que é pequeno; versões maiores vêm separadas, para
+      # serem lidas com calma.
+      menores:
+        update-types: [minor, patch]
+    ignore:
+      # O Next e o React andam juntos e mudam convenções: atualização de
+      # versão maior é feita à mão, lendo o guia de migração.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint-config-next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Sao_Paulo

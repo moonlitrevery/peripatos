@@ -2,15 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
-import { escolherAvatarPronto, excluirConta, removerFoto, salvarPerfil, salvarTags } from "@/app/acoes/config";
+import { escolherAvatarPronto, excluirConta, removerFoto, revogarSensiveis, salvarPerfil, salvarTags } from "@/app/acoes/config";
+import { sairDeTodosOsDispositivos } from "@/app/acoes/entrar";
 import { desbloquear } from "@/app/acoes/social";
 import { Dialogo } from "@/components/Dialogo";
 import { SeletorDeAvatar } from "@/components/SeletorDeAvatar";
 import { SeletorDeTags } from "@/components/SeletorDeTags";
+import { TagsSensiveis } from "@/components/TagsSensiveis";
 import type { Resultado } from "@/lib/erros";
 import { enviarFoto } from "@/lib/foto";
 import { createClient } from "@/lib/supabase/client";
-import { MAX_TAGS_COMUNS, MAX_TAGS_SENSIVEIS, type Tag } from "@/lib/tags";
+import { MAX_TAGS_COMUNS, type Tag } from "@/lib/tags";
 
 function useSalvar() {
   const router = useRouter();
@@ -94,39 +96,81 @@ export function FormPerfil({ inicial }: { inicial: { displayName: string; userna
   );
 }
 
-export function FormTags({ tags, comunsIniciais, sensiveisIniciais }: { tags: Tag[]; comunsIniciais: number[]; sensiveisIniciais: number[] }) {
+type PropsTags = {
+  tags: Tag[];
+  comunsIniciais: number[];
+  sensiveisIniciais: number[];
+  /** Quando a pessoa deu o consentimento para tags sensíveis, se já deu. */
+  consentidoEm: string | null;
+};
+
+export function FormTags({ tags, comunsIniciais, sensiveisIniciais, consentidoEm }: PropsTags) {
   const [comuns, setComuns] = useState(comunsIniciais);
   const [sensiveis, setSensiveis] = useState(sensiveisIniciais);
+  const [consentiu, setConsentiu] = useState(false);
+  const [revogando, setRevogando] = useState(false);
   const { pendente, erro, salvo, salvar } = useSalvar();
+  const revogacao = useSalvar();
   return (
     <form
       className="flex flex-col gap-5"
       onSubmit={(e) => {
         e.preventDefault();
-        salvar(() => salvarTags(comuns, sensiveis));
+        salvar(() => salvarTags({ comuns, sensiveis, consentiuSensiveis: consentiu }));
       }}
     >
       <SeletorDeTags tags={tags.filter((t) => !t.sensivel)} selecionadas={comuns} aoMudar={setComuns} maximo={MAX_TAGS_COMUNS} prefixo="cfg-tag" />
-      <details className="border-linha rounded-2xl border p-4" open={sensiveisIniciais.length > 0}>
+      <details className="border-linha rounded-2xl border p-4" open={sensiveisIniciais.length > 0 || !!consentidoEm}>
         <summary className="cursor-pointer font-semibold">Identidade e crenças (opcional)</summary>
         <div className="mt-4 flex flex-col gap-4">
-          <p className="text-tinta-2">
-            Só aparecem para quem você segue e que te segue de volta, e só contam na afinidade com essas pessoas. Nem a
-            moderação vê.
-          </p>
-          <SeletorDeTags
+          <TagsSensiveis
             tags={tags.filter((t) => t.sensivel)}
             selecionadas={sensiveis}
             aoMudar={setSensiveis}
-            maximo={MAX_TAGS_SENSIVEIS}
+            consentiu={consentiu}
+            aoConsentir={setConsentiu}
+            consentidoEm={consentidoEm}
             prefixo="cfg-sens"
           />
+          {consentidoEm && (
+            <>
+              <button type="button" className="btn btn-per btn-peq self-start" onClick={() => setRevogando(true)}>
+                Retirar consentimento e apagar estas tags
+              </button>
+              <Retorno erro={revogacao.erro} salvo={false} />
+            </>
+          )}
         </div>
       </details>
       <Retorno erro={erro} salvo={salvo}>Gostos salvos.</Retorno>
       <button type="submit" className="btn btn-pri self-start" disabled={pendente}>
         {pendente ? "Salvando…" : "Salvar gostos"}
       </button>
+
+      <Dialogo aberto={revogando} aoFechar={() => setRevogando(false)} titulo="Retirar o consentimento?">
+        <p>
+          Todas as suas tags de identidade e crenças são apagadas agora, e o registro do consentimento também. Você pode
+          autorizar de novo depois, se quiser.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button type="button" className="btn btn-qui" onClick={() => setRevogando(false)}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn-per"
+            disabled={revogacao.pendente}
+            onClick={() => {
+              setRevogando(false);
+              setSensiveis([]);
+              setConsentiu(false);
+              revogacao.salvar(revogarSensiveis);
+            }}
+          >
+            Retirar e apagar
+          </button>
+        </div>
+      </Dialogo>
     </form>
   );
 }
@@ -264,5 +308,32 @@ export function ExcluirConta() {
         </form>
       </Dialogo>
     </>
+  );
+}
+
+export function Sessoes() {
+  const [pendente, iniciar] = useTransition();
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        iniciar(async () => {
+          await sairDeTodosOsDispositivos();
+        });
+      }}
+    >
+      <p className="text-tinta-2">
+        Você continua conectado neste aparelho enquanto usar o app: a sessão se renova sozinha a cada hora. Se entrou
+        num computador do laboratório ou num celular emprestado e esqueceu de sair, encerre tudo por aqui.
+      </p>
+      <button type="submit" className="btn btn-sec self-start" disabled={pendente}>
+        {pendente ? "Saindo…" : "Sair de todos os dispositivos"}
+      </button>
+      <p className="fino">
+        Você também sai deste aparelho. Um aparelho que esteja com o app aberto pode levar até 1 hora para ser
+        desconectado.
+      </p>
+    </form>
   );
 }

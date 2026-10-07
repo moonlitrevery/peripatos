@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
@@ -106,7 +107,11 @@ export async function entrar(page: Page, email: string) {
  * Um contexto de navegador já logado como uma conta do seed. O login pelo
  * código acontece uma vez por execução; depois a sessão é reaproveitada.
  */
-export async function contextoDe(browser: Browser, alias: Alias): Promise<BrowserContext> {
+export async function contextoDe(
+  browser: Browser,
+  alias: Alias,
+  opcoes: { colorScheme?: "light" | "dark" } = {},
+): Promise<BrowserContext> {
   const pasta = path.join(__dirname, ".auth");
   const arquivo = path.join(pasta, `${alias}.json`);
   if (!existsSync(arquivo)) {
@@ -118,7 +123,7 @@ export async function contextoDe(browser: Browser, alias: Alias): Promise<Browse
     await contexto.storageState({ path: arquivo });
     await contexto.close();
   }
-  return browser.newContext({ storageState: arquivo });
+  return browser.newContext({ storageState: arquivo, ...opcoes });
 }
 
 /** Onboarding mínimo de um adulto, a partir de /onboarding. Termina no Início. */
@@ -127,6 +132,7 @@ export async function concluirOnboarding(page: Page, d: { nome: string; username
   await page.getByLabel("Como você quer ser chamado").fill(d.nome);
   await page.getByLabel("Username").fill(d.username);
   await page.getByLabel("Data de nascimento").fill(d.nascimento ?? "2000-05-20");
+  await page.getByLabel(/Li e aceito os Termos de uso/).check();
   await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Do que você gosta" })).toBeVisible();
   await page.getByRole("button", { name: "Continuar" }).click();
@@ -181,3 +187,37 @@ export async function clientePorApi(email: string): Promise<SupabaseClient> {
   if (error) throw error;
   return cliente;
 }
+
+// ---------------------------------------------------------------------------
+// Verificação em duas etapas
+// ---------------------------------------------------------------------------
+
+function base32(segredo: string): Buffer {
+  const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const c of segredo.replace(/=+$/, "").toUpperCase()) {
+    const v = alfabeto.indexOf(c);
+    if (v < 0) throw new Error(`segredo TOTP com caractere inválido: ${c}`);
+    bits += v.toString(2).padStart(5, "0");
+  }
+  const bytes = bits.match(/.{8}/g) ?? [];
+  return Buffer.from(bytes.map((b) => parseInt(b, 2)));
+}
+
+/** O código de 6 dígitos que um aplicativo autenticador mostraria agora (RFC 6238). */
+export function codigoTotp(segredo: string, agora = Date.now()): string {
+  const contador = Buffer.alloc(8);
+  contador.writeBigUInt64BE(BigInt(Math.floor(agora / 30_000)));
+  const h = createHmac("sha1", base32(segredo)).update(contador).digest();
+  const i = h[h.length - 1]! & 0x0f;
+  const n = ((h[i]! & 0x7f) << 24) | (h[i + 1]! << 16) | (h[i + 2]! << 8) | h[i + 3]!;
+  return String(n % 1_000_000).padStart(6, "0");
+}
+
+/** Espera virar a janela de 30 s, para o próximo código ser diferente do anterior. */
+export async function proximaJanelaTotp() {
+  const resto = 30_000 - (Date.now() % 30_000);
+  await new Promise((r) => setTimeout(r, resto + 500));
+}
+
+export const ARQUIVO_DA_STAFF_AAL2 = path.join(__dirname, ".auth", "moderadora-aal2.json");

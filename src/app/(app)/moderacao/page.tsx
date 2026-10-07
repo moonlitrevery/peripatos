@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { banir, moderarAvatar, ocultarPost, resolverDenuncia } from "@/app/acoes/moderacao";
 import { Gif } from "@/components/Gif";
 import { rotuloDoMotivo } from "@/lib/denuncias";
-import { exigirSessao, meuCargo } from "@/lib/sessao";
+import { exigirSessao, meuCargo, nivelDaSessao } from "@/lib/sessao";
 import { haQuantoTempo } from "@/lib/tempo";
 import { AcaoComMotivo } from "./AcaoComMotivo";
 
@@ -17,6 +17,9 @@ export default async function Moderacao() {
   // consultas abaixo voltariam vazias e as RPCs recusariam de qualquer jeito.
   const cargo = await meuCargo();
   if (!cargo) redirect("/");
+  // Staff sem o segundo fator confirmado neste login vai confirmar antes. Sem
+  // isso o banco devolveria as filas vazias e recusaria qualquer ação.
+  if ((await nivelDaSessao()) !== "aal2") redirect("/moderacao/verificacao");
 
   const [denuncias, pendentes] = await Promise.all([
     supabase
@@ -37,7 +40,7 @@ export default async function Moderacao() {
   const idsPosts = lista.flatMap((d) => (d.post_id ? [d.post_id] : []));
   const { data: posts } = await supabase
     .from("posts")
-    .select("id, body, gif_id, author_id, hidden_at, deleted_at")
+    .select("id, body, gif_id, gif_alt, author_id, hidden_at, deleted_at")
     .in("id", idsPosts);
   const postPorId = new Map((posts ?? []).map((p) => [p.id, p]));
 
@@ -105,7 +108,7 @@ export default async function Moderacao() {
                       {post?.deleted_at && " · apagado pelo autor"}
                     </p>
                     {post && post.body && <p className="break-words whitespace-pre-wrap">{post.body}</p>}
-                    {post?.gif_id && <Gif id={post.gif_id} />}
+                    {post?.gif_id && <Gif id={post.gif_id} alt={post.gif_alt} />}
                     {!post && alvo?.bio && <p className="break-words whitespace-pre-wrap">{alvo.bio}</p>}
                     {d.post_id && !post && <p className="text-tinta-2">O post não está mais disponível.</p>}
                   </div>

@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { falha, mensagemDeErro, ok, type Resultado } from "@/lib/erros";
 import { gravarTags } from "@/lib/gravar-tags";
 import { createClient } from "@/lib/supabase/server";
+import * as v from "@/lib/validacao";
+import { z } from "zod";
 
 const SEM_SESSAO = "Sua sessão expirou. Entre de novo.";
 
@@ -16,18 +18,19 @@ async function sessao() {
   return { supabase, user };
 }
 
-export async function salvarPerfil(d: { displayName: string; username: string; bio: string }): Promise<Resultado> {
+const Perfil = z.object({ displayName: v.nomeDeExibicao, username: v.username, bio: v.bio });
+
+export async function salvarPerfil(bruto: unknown): Promise<Resultado> {
+  const r = v.validar(Perfil, bruto);
+  if (!r.ok) return r.falha;
+  const d = r.dado;
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
-
-  const username = d.username.trim().toLowerCase();
-  if (!/^[a-z0-9_]{3,20}$/.test(username)) return falha("O username precisa ter de 3 a 20 caracteres: letras minúsculas, números e _.");
-  if (d.displayName.trim() === "") return falha("Diga como você quer ser chamado.");
 
   // Só as três colunas que o banco deixa a pessoa editar.
   const { error } = await supabase
     .from("profiles")
-    .update({ display_name: d.displayName.trim(), username, bio: d.bio.trim() || null })
+    .update({ display_name: d.displayName, username: d.username, bio: d.bio || null })
     .eq("id", user.id);
   if (error?.code === "23505") return falha("Este username já está em uso.");
   if (error) return falha(mensagemDeErro(error));
@@ -35,16 +38,42 @@ export async function salvarPerfil(d: { displayName: string; username: string; b
   return ok(undefined);
 }
 
-export async function salvarTags(comuns: number[], sensiveis: number[]): Promise<Resultado> {
+const Tags = z.object({ comuns: v.tagsComuns, sensiveis: v.tagsSensiveis, consentiuSensiveis: z.boolean() });
+
+// `consentiuSensiveis` é a caixa de consentimento específico marcada NESTA
+// tela. Só ela registra o consentimento; sem registro, o banco recusa a tag.
+export async function salvarTags(bruto: unknown): Promise<Resultado> {
+  const r = v.validar(Tags, bruto);
+  if (!r.ok) return r.falha;
+  const d = r.dado;
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
-  const erro = await gravarTags(supabase, user.id, comuns, sensiveis);
+
+  if (d.sensiveis.length > 0 && d.consentiuSensiveis) {
+    const consentimento = await supabase.rpc("consentir_tags_sensiveis");
+    if (consentimento.error) return falha(mensagemDeErro(consentimento.error));
+  }
+  const erro = await gravarTags(supabase, user.id, d.comuns, d.sensiveis);
   if (erro) return falha(mensagemDeErro(erro));
   revalidatePath("/", "layout");
   return ok(undefined);
 }
 
-export async function escolherAvatarPronto(n: number): Promise<Resultado> {
+// Revoga o consentimento: o banco apaga todas as tags sensíveis e o registro
+// do consentimento na mesma transação.
+export async function revogarSensiveis(): Promise<Resultado> {
+  const { supabase, user } = await sessao();
+  if (!user) return falha(SEM_SESSAO);
+  const { error } = await supabase.rpc("revogar_tags_sensiveis");
+  if (error) return falha(mensagemDeErro(error));
+  revalidatePath("/", "layout");
+  return ok(undefined);
+}
+
+export async function escolherAvatarPronto(bruto: unknown): Promise<Resultado> {
+  const r = v.validar(v.avatarPronto, bruto);
+  if (!r.ok) return r.falha;
+  const n = r.dado;
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
   const { error } = await supabase.from("profiles").update({ avatar_preset: n }).eq("id", user.id);
@@ -78,10 +107,11 @@ export async function removerFoto(): Promise<Resultado> {
   return ok(undefined);
 }
 
-export async function excluirConta(confirmacao: string): Promise<Resultado> {
+export async function excluirConta(confirmacao: unknown): Promise<Resultado> {
+  const r = v.validar(z.string().max(20), confirmacao);
+  if (!r.ok || r.dado.trim() !== "EXCLUIR") return falha("Digite EXCLUIR, em maiúsculas, para confirmar.");
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
-  if (confirmacao.trim() !== "EXCLUIR") return falha("Digite EXCLUIR, em maiúsculas, para confirmar.");
 
   const erroArquivos = await apagarArquivos(supabase, user.id);
   if (erroArquivos) return falha("Não foi possível apagar sua foto, então a conta não foi excluída. Tente de novo.");

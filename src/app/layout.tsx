@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next, Bricolage_Grotesque } from "next/font/google";
+import { connection } from "next/server";
 import { RegistrarServiceWorker } from "@/components/RegistrarServiceWorker";
 import "./globals.css";
 
@@ -25,7 +26,11 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Toda página é renderizada a cada requisição: é assim que o Next aplica o
+  // nonce da Content-Security-Policy (src/proxy.ts) aos próprios scripts. Uma
+  // página estática sairia com scripts sem nonce, que o navegador bloquearia.
+  await connection();
   return (
     <html lang="pt-BR" className={`${texto.variable} ${titulo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">

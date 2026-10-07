@@ -13,6 +13,20 @@ permissions:
   contents: read
 
 jobs:
+  # Segredos no git: varre TODO o histórico, de todos os branches.
+  segredos:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git /repo --log-opts="--all" --redact --no-banner
+
   # Num pull request vindo de um branch do próprio repositório, o push já
   # rodou tudo: não repete.
   testes:
@@ -30,6 +44,15 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # O que vai para produção não pode ter vulnerabilidade alta ou crítica.
+      - name: pnpm audit (dependências de produção, bloqueia)
+        run: pnpm audit --prod --audit-level high
+
+      # Ferramentas de desenvolvimento: aparece no log, não bloqueia. O
+      # Dependabot abre o PR quando existir correção.
+      - name: pnpm audit (tudo, só informa)
+        run: pnpm audit || true
 
       - name: Lint
         run: pnpm lint

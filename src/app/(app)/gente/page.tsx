@@ -74,7 +74,7 @@ export default async function Gente() {
               <li key={p.user_id}>
                 <article className="cartao flex flex-col gap-3" aria-label={p.display_name}>
                   <header className="flex items-center gap-3">
-                    <Avatar url={p.avatar_path ? urls.get(p.avatar_path) : null} preset={p.avatar_preset} semente={p.user_id} tamanho={52} />
+                    <Avatar url={p.avatar_path ? urls.get(p.avatar_path) : null} preset={p.avatar_preset} semente={p.user_id} tamanho={52} nome={p.display_name} />
                     <div className="min-w-0 flex-1">
                       <h2 className="truncate text-xl leading-tight font-bold">
                         <Link href={`/u/${p.username}`}>{p.display_name}</Link>

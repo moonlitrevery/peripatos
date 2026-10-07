@@ -46,7 +46,7 @@ select is(
   'não-mutual (sou seguido, mas não sigo de volta) NÃO vê a tag sensível'
 );
 
-select tests.login('adma');
+select tests.login_mfa('adma');
 select is(
   (select count(*) from public.profile_sensitive_tags), 0::bigint,
   'nem admin da instituição lê tags sensíveis dos outros'

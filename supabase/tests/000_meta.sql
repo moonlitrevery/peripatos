@@ -149,9 +149,9 @@ select is_empty(
        join pg_class c on c.oid = a.attrelid
        join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = 'private' and c.relkind = 'r' and a.attnum > 0 and not a.attisdropped
-         and a.attname in ('ra', 'birth_date', 'email_hmac', 'domain')
+         and a.attname in ('ra_hmac', 'maioridade_verificada_em', 'termos_aceitos_em', 'sensivel_consentido_em', 'email_hmac', 'domain')
        union all
-       select unnest(array['email', 'e_mail', 'data_nascimento', 'nascimento', 'cpf'])
+       select unnest(array['email', 'e_mail', 'data_nascimento', 'nascimento', 'birth_date', 'ra', 'cpf'])
      )
      select p.oid::regprocedure::text || ' -> ' || arg.nome
      from pg_proc p
@@ -181,7 +181,8 @@ select bag_eq(
        ('apagar_post'), ('minhas_denuncias'), ('meus_bloqueios'),
        ('ocultar_post'), ('restaurar_post'), ('banir_usuario'), ('desbanir_usuario'),
        ('moderar_avatar'), ('resolver_denuncia'),
-       ('definir_cargo'), ('remover_cargo'), ('resolver_pedido_tag') $$,
+       ('definir_cargo'), ('remover_cargo'), ('resolver_pedido_tag'),
+       ('consentir_tags_sensiveis'), ('revogar_tags_sensiveis'), ('registrar_busca_gif') $$,
   'META: authenticated só executa as RPCs conhecidas de public'
 );
 

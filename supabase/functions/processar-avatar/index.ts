@@ -23,8 +23,14 @@ import { reencodar } from "./reencodar.ts";
 
 const TAMANHO_MAXIMO = 2 * 1024 * 1024;
 
+// CORS: em produção só o endereço do app chama esta função pelo navegador.
+// Defina o segredo ORIGEM_DO_APP (ex.: https://peripatos.vercel.app) com
+// `supabase secrets set`. Sem ele (ambiente local) qualquer origem é aceita.
+// Isto é defesa em profundidade: a função já exige o token do usuário no
+// cabeçalho Authorization, que nenhum outro site consegue enviar por ele.
 const cors = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("ORIGEM_DO_APP") || "*",
+  "Vary": "Origin",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };

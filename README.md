@@ -43,6 +43,12 @@ Se `http://127.0.0.1:54321` não responder depois do `supabase start` (acontece 
 | `supabase/config.toml` | OTP, auth hook e schemas expostos (**só local**; produção é configurada pelo painel, ver `docs/deploy.md`) |
 | `scripts/verificar-deploy.mjs` | Verificação pós-deploy com a chave pública |
 | `docs/deploy.md` | Checklist do deploy do beta |
+| `docs/auditoria.md` | Auditoria legal, de aparência e de segurança, item por item |
+| `docs/incidentes.md` | O que fazer se um segredo vazar, um deploy ou uma migration der errado, e o que a LGPD exige |
+| `docs/backup.md` | Backup criptografado e restauração |
+| `scripts/backup-criptografado.sh`, `scripts/restaurar-backup.sh` | Backup dos dados cifrado em pipe (nunca em claro no disco) e a volta |
+| `src/lib/validacao.ts` | Validação (zod) de tudo o que chega por server action ou route handler |
+| `src/lib/csp.ts`, `src/proxy.ts` | Content-Security-Policy com nonce por resposta |
 | `supabase/templates/otp.html` | E-mail com o código de 6 dígitos |
 
 > O seed não roda no projeto hospedado. A instituição, o domínio da allowlist e o vocabulário de tags estão na migration `20261006000001_vocabulario.sql`, que é idempotente: produção sobe com as tags.
@@ -55,6 +61,34 @@ Se `http://127.0.0.1:54321` não responder depois do `supabase start` (acontece 
 - O **âmbar é exclusivo do que duas pessoas têm em comum**. Nos cards de Gente, as tags em comum vêm primeiro e em âmbar, e são exatamente as contadas na frase "Vocês têm N gostos em comum". O anel de foco usa a cor da tinta (quase preto no tema claro, branco no escuro).
 - `/termos` e `/privacidade` são **rascunhos**, marcados como tal na própria página. Precisam de revisão antes do lançamento, e o e-mail de contato é um placeholder.
 
+### Consentimentos
+
+- **Termos e Política.** No onboarding a pessoa marca o aceite, e o banco grava a versão aceita e a data (`private.accounts.termos_versao`, `termos_aceitos_em`). A versão vigente mora no banco (`private.termos_versao_atual()`) e em `src/lib/legal.ts`; o banco só aceita o aceite da versão vigente.
+- **Tags sensíveis (LGPD, art. 11).** Consentimento específico, pedido à parte, com a finalidade escrita. Sem consentimento registrado **o banco recusa** gravar tag sensível, por qualquer caminho. Em Configurações a pessoa revoga: as tags e o registro do consentimento são apagados na mesma transação.
+
+### Segurança da interface
+
+- **Validação no servidor.** Toda server action e o route handler validam a forma do que chega com zod (`src/lib/validacao.ts`) antes de falar com o banco. As constraints, o RLS e as RPCs continuam decidindo.
+- **Cabeçalhos.** CSP com nonce por resposta (scripts só do app; conexões só para o app e o Supabase; imagens só do app, do Supabase e do Giphy), `frame-ancestors 'none'`, HSTS de dois anos, `Referrer-Policy`, `nosniff`. Por causa do nonce todas as páginas são renderizadas a cada requisição.
+- **Verificação em duas etapas da staff.** Moderar exige sessão `aal2` (código do e-mail + TOTP), e quem exige é o banco: sem o segundo fator as RPCs recusam e as filas vêm vazias, pela interface ou pela API.
+- **Busca de GIF com limite por pessoa** (30 por minuto, 400 por dia), contado no banco, para ninguém esgotar a cota da chave.
+- **Nenhum filtro do PostgREST é montado com texto** (`.or()`, `.filter()`), e não há `dangerouslySetInnerHTML` nem link vindo de dado de usuário. Um teste varre o código e falha se aparecer.
+- **Logs.** O app não escreve log com código de acesso, e-mail, RA ou token (não há `console.*` em `src/` nem na Edge Function). Os logs do próprio Supabase Auth registram o e-mail de quem pede código; isso é do fornecedor e está na política de privacidade.
+
+### Sessões
+
+| | Valor | Onde |
+| --- | --- | --- |
+| Token de acesso (JWT) | vence em **1 hora** | `[auth] jwt_expiry = 3600` |
+| Refresh token | uso único, com rotação; reuso depois de 10 s encerra a sessão | `enable_refresh_token_rotation`, `refresh_token_reuse_interval` |
+| Sessão | **não vence sozinha**: renova enquanto o app for usado | padrão do Supabase |
+| Cookie da sessão | `SameSite=Lax`, validade de 400 dias, **não é HttpOnly** | `@supabase/ssr` |
+| Segundo fator da staff | vale só para aquele login | claim `aal` do JWT |
+
+- **Sair** encerra a sessão do aparelho. **Sair de todos os dispositivos** (Configurações) revoga todas as sessões da conta; nos outros aparelhos a próxima página já pede login, porque o servidor confere a sessão com o Auth a cada requisição (`getUser()`).
+- Limitar a duração total da sessão (*time-box*) e encerrar por inatividade existem no Supabase, mas **só no plano Pro**. Estão comentados em `supabase/config.toml` (`[auth.sessions]`).
+- O cookie não é HttpOnly porque o cliente do navegador precisa do token para falar com o Storage (envio de foto). O que protege o token de um script injetado é a CSP: nenhum script de fora roda.
+
 ### PWA
 
 Manifest, ícones, página `/offline` e um service worker escrito à mão (`public/sw.js`).
@@ -66,7 +100,7 @@ O service worker **não guarda nada que dependa de quem está logado**: num celu
 | | `public` | `private` |
 | --- | --- | --- |
 | Exposto pela API | Sim | **Não. Nunca adicionar a `[api].schemas`** |
-| Conteúdo | Tudo o que o app lê e escreve | E-mail (só em `auth.users`), RA, data de nascimento, HMACs de banimento, allowlist de domínios, contadores de rate limit e funções auxiliares |
+| Conteúdo | Tudo o que o app lê e escreve | E-mail (só em `auth.users`), HMAC do RA, registro de maioridade verificada, aceite dos termos, consentimento das tags sensíveis, HMACs de banimento, allowlist de domínios, contadores de rate limit e funções auxiliares |
 | Acesso de `authenticated` | Só o que tem `GRANT` explícito, filtrado por RLS | Nenhuma tabela. Só `EXECUTE` nas funções que as políticas de RLS usam |
 | Acesso de `anon` | Nenhum | Nenhum |
 
@@ -92,7 +126,7 @@ Login por **código de 6 dígitos por e-mail** (OTP), não por link. Os template
 O e-mail tem o formato `nome.RA@alunos.unisagrado.edu.br`. A validação acontece em duas camadas com a mesma lógica (`private.parse_signup_email`):
 
 1. **Auth hook `before_user_created`** (`private.hook_before_user_created`): recusa antes de o usuário existir.
-2. **Triggers em `auth.users`**: recusam o `INSERT` mesmo se o hook estiver desligado ou mal configurado, e criam `private.accounts` (instituição + RA) e o `public.profiles` vazio.
+2. **Triggers em `auth.users`**: recusam o `INSERT` mesmo se o hook estiver desligado ou mal configurado, e criam `private.accounts` (instituição + HMAC do RA) e o `public.profiles` vazio. Outro nome com o mesmo RA na mesma instituição é recusado.
 
 O cadastro é recusado se: o domínio não está em `private.institution_domains` (comparação exata, depois de normalizar em minúsculas); o e-mail não termina em `.RA` numérico (isso também barra `+alias`); ou o e-mail está banido.
 
@@ -102,19 +136,20 @@ O cadastro é recusado se: o domínio não está em `private.institution_domains
 
 ### Onboarding e 18+
 
-`completar_onboarding(username, display_name, data_nascimento, bio)` grava a data de nascimento em `private.accounts` e marca o perfil como completo.
+`completar_onboarding(username, display_name, data_nascimento, bio, termos_versao)` confere a data, grava em `private.accounts` **só o instante em que a maioridade foi verificada** e o aceite dos termos (versão e data), e marca o perfil como completo.
 
-- **Conta ativa** = onboarding completo **e** 18 anos ou mais **e** não banida (`private.is_active`). Só conta ativa posta, segue, denuncia e aparece para os outros.
+- **Conta ativa** = onboarding completo **e** maioridade verificada **e** não banida (`private.is_active`). Só conta ativa posta, segue, denuncia e aparece para os outros.
 - Antes disso, a pessoa **só vê e edita o próprio perfil**.
 - **Menor de 18 não fica guardado.** Se a data informada é de menor, a conta inteira é apagada dentro da própria chamada (usuário do Auth, e-mail, RA, a data) e a função devolve `menor_de_idade: true`. A pessoa é levada para `/maiores-de-18`, página pública que mostra "O Peripatos é para maiores de 18. Volte quando fizer aniversário."
-- Consequência assumida: como nada fica guardado, a mesma pessoa pode se cadastrar de novo com outra data. O banco nunca teve como conferir a data; o que mudou é que não guardamos dados de quem se declarou menor. `private.is_active` continua conferindo a idade, como segunda camada.
-- **A data de nascimento é gravada uma vez.**
+- Consequência assumida: como nada fica guardado, a mesma pessoa pode se cadastrar de novo com outra data. O banco nunca teve como conferir a data; o que mudou é que não guardamos dados de quem se declarou menor.
+- **A data de nascimento não é guardada** (minimização, migration 13). Ela só servia para responder "tem 18 ou mais?"; como quem informa data de menor é apagado na hora, toda conta que conclui o onboarding já passou pela verificação, e idade só aumenta. Fica `maioridade_verificada_em`.
+- **O RA não é guardado em claro.** Fica um HMAC (com a mesma chave do Vault do banimento), que basta para impedir duas contas com o mesmo RA. O RA continua existindo num só lugar: dentro do e-mail de login, em `auth.users`.
 - `display_name` é livre e independente do nome do e-mail (nome social, apelido). `username` é único **por instituição**.
 - `conta_status()` diz ao app por que a conta não está ativa, sem devolver a data.
 
 ### Excluir conta (LGPD)
 
-`excluir_conta('EXCLUIR')` apaga o usuário do Auth, e as FKs em cascata levam junto perfil, conta privada (RA e data de nascimento), posts, tags comuns e sensíveis, follows, blocks, denúncias feitas e recebidas, pedidos de tag, cargo e sessões. Só se exclui a própria conta: não há parâmetro de usuário.
+`excluir_conta('EXCLUIR')` apaga o usuário do Auth, e as FKs em cascata levam junto perfil, conta privada, posts, tags comuns e sensíveis, follows, blocks, denúncias feitas e recebidas, pedidos de tag, cargo e sessões. Só se exclui a própria conta: não há parâmetro de usuário.
 
 Os arquivos de avatar são apagados **antes**, pela Storage API e com a sessão da própria pessoa (apagar só a linha de `storage.objects` deixaria o arquivo órfão). A função se recusa a rodar enquanto existir arquivo em `avatars` ou `avatar-uploads`; a interface faz os dois passos em sequência.
 
@@ -153,7 +188,7 @@ Nada mais é mantido: nem e-mail, nem RA, nem conteúdo.
 | Tabela | O que guarda |
 | --- | --- |
 | `institution_domains` | Allowlist: domínio de e-mail → instituição |
-| `accounts` | `user_id`, `institution_id`, `ra`, `birth_date` |
+| `accounts` | `user_id`, `institution_id`, `ra_hmac`, `maioridade_verificada_em`, `termos_versao`, `termos_aceitos_em`, `sensivel_consentido_em` |
 | `banned_emails` | HMAC do e-mail banido |
 | `rate_limit_events` | Eventos contados pelos rate limits |
 
@@ -161,10 +196,11 @@ Nada mais é mantido: nem e-mail, nem RA, nem conteúdo.
 
 | Função | Significado |
 | --- | --- |
-| `is_active(uid)` | Onboarding completo, 18+, não banido |
+| `is_active(uid)` | Onboarding completo, maioridade verificada, não banido |
 | `is_mutual(a, b)` | `a` segue `b` e `b` segue `a` |
 | `is_blocked(a, b)` | Existe bloqueio em qualquer direção |
-| `is_staff(uid, institution_id)` / `is_admin(...)` | Tem cargo na instituição e a conta está ativa |
+| `is_staff(uid, institution_id)` / `is_admin(...)` | Tem cargo na instituição, a conta está ativa e, quando `uid` é quem está chamando, **a sessão é `aal2`** (segundo fator confirmado) |
+| `sessao_aal2()` | O claim `aal` do JWT é `aal2` |
 | `my_institution()` | Instituição de quem chama |
 | `can_see(leitor, alvo)` | Mesma instituição, alvo ativo, sem bloqueio |
 
@@ -267,6 +303,7 @@ pnpm test:db      # pgTAP (precisa do supabase start)
 pnpm test:exif    # re-encode do avatar, em Deno (não precisa de Docker)
 pnpm exec playwright install chromium   # uma vez
 pnpm test:e2e     # Playwright (precisa do supabase start)
+pnpm audit --prod # vulnerabilidades nas dependências de produção
 ```
 
 No GitHub, o workflow `.github/workflows/ci.yml` roda tudo isso a cada push, num runner Ubuntu com o Supabase local, mais o `verificar:deploy` contra a stack local.
@@ -289,8 +326,9 @@ No GitHub, o workflow `.github/workflows/ci.yml` roda tudo isso a cada push, num
 | `090_banimento` | Banido some de feed, perfis e `pessoas_parecidas`; e-mail não se recadastra |
 | `100_feed` | Fórmula do score, intercalação 3:1, paginação estável |
 | `110_storage` | Pasta por uid, bucket de entrada, ninguém escreve em `avatars`, pendente invisível, aprovado visível |
-| `120_privacidade` | Despeja tudo o que usuário, moderador e admin conseguem ler e procura e-mails, RAs e datas de nascimento |
+| `120_privacidade` | Despeja tudo o que usuário, moderador e admin conseguem ler e procura e-mails, domínios, RAs e colunas da conta privada |
 | `130_excluir_conta` | A exclusão apaga tudo da pessoa e mantém só o HMAC de banimento e a auditoria |
+| `140_auditoria` | Staff sem `aal2` não age nem lê (e `aal2` em metadata não conta); consentimento de tags sensíveis e revogação; aceite dos termos só da versão vigente; `ra` e `birth_date` não existem mais; mesmo RA com outro nome é recusado; limite de buscas de GIF; texto alternativo do GIF |
 
 Ao criar uma RPC nova em `public`, o meta-teste falha até ela entrar na lista de `000_meta.sql`. É proposital: obriga a revisar a função.
 
@@ -305,16 +343,37 @@ Roda num celular (Pixel 7) contra o Supabase local, com um build de produção d
 | Arquivo | Cobre |
 | --- | --- |
 | `01-entrar` | E-mail fora da lista e sem RA recusados com a mensagem do banco; código errado; contagem do reenvio; login com o código do e-mail |
-| `02-onboarding` | Menor de idade barrado, levado a `/maiores-de-18` e apagado do Auth; adulto com gostos e tag sensível (seção fechada por padrão) |
+| `02-onboarding` | Menor de idade barrado, levado a `/maiores-de-18` e apagado do Auth; aceite dos termos obrigatório; consentimento específico antes das tags sensíveis, revogação apagando as tags, e recusa do banco pela API sem consentimento; adulto com gostos e tag sensível (seção fechada por padrão) |
 | `03-feed` | Postar com GIF: grava só o ID e exibe. A rota `/api/giphy` é simulada no navegador, então não precisa de chave; sem login ela responde 401 |
 | `04-seguir-e-tag-sensivel` | Em Gente, a contagem bate com os chips em âmbar; seguir de volta vira mútuo, e só então a tag sensível aparece |
 | `05-bloqueio` | Perfil e posts somem do feed, de Gente e do endereço direto, nos dois sentidos |
 | `06-moderacao` | Usuário comum é redirecionado de `/moderacao`; moderadora entra |
 | `07-excluir-conta` | A conta some do Auth, e o perfil e os posts somem para os outros |
 | `08-avatar-sem-exif` | Falando direto com a API (sem o redimensionamento do navegador): a função tira o EXIF, apaga o original e deixa a foto pendente |
+| `10-cabecalhos` | CSP (nonce novo a cada resposta, sem `unsafe-inline`, só Supabase e Giphy liberados), `frame-ancestors`, HSTS e `Referrer-Policy` em páginas públicas, logadas, redirecionamentos, API e estáticos |
+| `11-mfa` | Staff sem segundo fator não lê fila nem age, nem pela API; cadastra o autenticador, erra o código, acerta e entra; num login novo o código é pedido de novo |
+| `12-acessibilidade` | axe-core (WCAG 2.1 A e AA) em todas as telas e diálogos, nos temas claro e escuro: zero violações sérias ou críticas, e nenhuma violação da CSP |
+| `13-seguranca` | Nenhum filtro em texto nem HTML cru no código; username malicioso não acha ninguém; limite da busca de GIF; "sair de todos os dispositivos" derruba o outro aparelho |
 | `09-service-worker` | Com o service worker ativo e controlando a página, depois de logar e navegar: a Cache Storage tem só a página offline e os ícones, nada do Supabase nem de rota autenticada; sem rede, entrega a página offline e não uma cópia do Início |
 
 Os testes usam a service role local para conferir, por fora do app, que uma conta ou um arquivo deixou de existir. Ela é lida de `supabase status` na hora e não fica em nenhum arquivo.
+
+## Licenças
+
+| O quê | Origem | Licença |
+| --- | --- | --- |
+| **Atkinson Hyperlegible Next** (texto) | Braille Institute, via `next/font/google` (baixada no build e servida pelo próprio app) | SIL Open Font License 1.1 |
+| **Bricolage Grotesque** (títulos) | Mathieu Triay, via `next/font/google` | SIL Open Font License 1.1 |
+| Ícones da navegação e o cadeado | Desenhados para o Peripatos, em SVG no código (`Navegacao.tsx`, `TagChip.tsx`). Nenhuma biblioteca de ícones | Do projeto |
+| Os 12 avatares prontos | Figuras geométricas geradas em código (`Avatar.tsx`). Sem foto, sem rosto, sem imagem de terceiros | Do projeto |
+| Marca dos dois arcos e ícones do app | Desenhados para o Peripatos (`Marca.tsx`, `public/icones/`) | Do projeto |
+| GIFs | Giphy, carregados dos servidores deles, com a atribuição "Powered by GIPHY" no seletor | Termos da API do Giphy |
+| `e2e/fixtures/foto-com-gps.jpg` | Imagem sintética criada para o teste de EXIF | Do projeto |
+| Next.js, React, Supabase JS, Tailwind, zod, Playwright, axe-core | npm | MIT, Apache-2.0 ou MPL-2.0 (axe-core) |
+
+A Open Font License permite usar e embutir as fontes; não permite vendê-las sozinhas. **Confira as duas licenças na página de cada fonte no Google Fonts antes do lançamento**: a tabela reflete o que eu sei delas, não uma verificação do arquivo de licença.
+
+O repositório ainda **não tem um arquivo `LICENSE`**: sem ele, o código é "todos os direitos reservados". Está em `docs/auditoria.md` como decisão.
 
 ## Deploy (ainda não foi feito)
 

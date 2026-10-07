@@ -27,6 +27,8 @@ O `supabase/config.toml` configura só o Supabase **local**. No projeto hospedad
 | **SMTP** | não existe no `config.toml` (o local usa o Mailpit) | **Painel** (passo 7) |
 | Confirmação de e-mail, login anônimo, telefone | `[auth]`, `[auth.email]`, `[auth.sms]` | **Painel** (passo 6) |
 | Site URL | `[auth] site_url` (local: `127.0.0.1:3000`) | **Painel** (passo 11) |
+| **Verificação em duas etapas (TOTP)** | `[auth.mfa.totp]` | **Painel** (passo 6). O banco exige aal2 da staff |
+| Origem aceita pela Edge Function | não está no `config.toml` | **Comando** `supabase secrets set` (passo 9) |
 | Schemas expostos pela API | `[api] schemas = ["public"]` | **Painel** (passo 5) |
 | Dados de teste (`supabase/seed.sql`) | — | **Não sobem**, de propósito |
 
@@ -90,9 +92,10 @@ select name, created_at from vault.secrets where name = 'peripatos_ban_hmac_key'
 
 Regras:
 
-- **Nunca** copie a chave local para produção, nem a de produção para fora do banco.
+- **Nunca** copie a chave local para produção.
+- A chave de produção sai do banco por um único caminho: dentro do backup criptografado (`docs/backup.md`), porque sem ela um banco restaurado não reconhece os banidos nem os RAs já cadastrados (a conta guarda só o HMAC do RA).
 - **Não rotacione** depois do primeiro banimento: os hashes em `private.banned_emails` deixariam de bater e os banidos voltariam a conseguir se cadastrar.
-- A chave vive só neste projeto. Se o projeto for apagado e recriado, a lista de banidos perde o efeito. Restaurar um backup do próprio projeto preserva as duas coisas juntas.
+- Se o projeto for apagado e recriado **sem** restaurar o backup, a lista de banidos e a unicidade de RA perdem o efeito.
 
 ## 5. Schemas expostos pela API — [painel]
 
@@ -111,6 +114,8 @@ Regras:
 | *Sign In / Providers → Phone* | Telefone | **desligado** | `[auth.sms] enable_signup = false` |
 | *Sign In / Providers* | Google, GitHub e demais | **todos desligados** | nenhum `[auth.external.*]` ligado |
 | *Sign In / Providers* | *Allow new users to sign up* | **ligado** | `enable_signup = true` |
+| *Authentication → Multi-Factor* | *TOTP (app authenticator)* | **ligado** (enroll e verify) | `[auth.mfa.totp]` |
+| *Authentication → Sessions* | *Time-box* e *Inactivity timeout* | só no plano Pro; ver `README.md`, "Sessões" | comentado em `[auth.sessions]` |
 
 - [ ] Todos os itens da tabela conferidos.
 - [ ] **Auth hook de cadastro.** *Authentication → Hooks → Before User Created*:
@@ -165,6 +170,13 @@ pnpm exec supabase functions deploy processar-avatar
 ```
 
 - A função sobe com `verify_jwt = true` (vem do `config.toml`). **Não** use `--no-verify-jwt`.
+- Depois de saber o endereço do app (passo 10), restrinja o CORS da função a ele:
+
+  ```bash
+  pnpm exec supabase secrets set ORIGEM_DO_APP=https://<projeto>.vercel.app
+  pnpm exec supabase functions deploy processar-avatar
+  ```
+
 - Ela recebe `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` do próprio Supabase. Você não cadastra nenhum segredo.
 - [ ] **[painel]** *Edge Functions*: `processar-avatar` aparece como ativa, com *Verify JWT* ligado.
 
@@ -232,7 +244,8 @@ insert into public.staff_roles (user_id, institution_id, role)
 select id, institution_id, 'admin' from public.profiles where username = '<seu username>';
 ```
 
-- [ ] `/moderacao` abre e a foto aparece na fila.
+- [ ] `/moderacao` pede para configurar o autenticador (verificação em duas etapas). Depois de confirmar o código, a fila abre e a foto aparece.
+- [ ] Faça o primeiro backup e um ensaio de restauração num projeto de teste: `docs/backup.md`.
 
 ## 14. Evitar que o projeto pause
 
@@ -264,14 +277,17 @@ O que fazer, em ordem de confiança:
 - [ ] `/termos` e `/privacidade` revisados (hoje são rascunhos, marcados como tal) e o e-mail de contato trocado.
 - [ ] Chave de produção do Giphy pedida, se o uso passar do limite da de desenvolvimento.
 - [ ] Limites do passo 8 revistos para o tamanho esperado do lançamento.
-- [ ] Plano do Supabase decidido (passo 14).
+- [ ] Plano do Supabase decidido (passo 14). No grátis não há backup automático: o backup é o de `docs/backup.md`.
+- [ ] `docs/incidentes.md` lido, e o e-mail da conta Supabase é um que você lê.
+- [ ] Itens "precisa de decisão" de `docs/auditoria.md` resolvidos.
 - [ ] `pnpm exec supabase config diff` lido: as diferenças esperadas são Site URL, limites e SMTP. Qualquer outra merece atenção.
 
 ## Atualizações depois do primeiro deploy
 
 | Mudou | Faça |
 | --- | --- |
-| Uma migration nova | **[comando]** `pnpm exec supabase db push --dry-run`, depois `db push`, depois `pnpm verificar:deploy` |
+| Uma migration nova | **[comando]** backup (`scripts/backup-criptografado.sh`), `pnpm exec supabase db push --dry-run`, depois `db push`, depois `pnpm verificar:deploy` |
+| Os Termos ou a Política | Nova versão em `src/lib/legal.ts` **e** numa migration que troca `private.termos_versao_atual()`, na mesma entrega |
 | A Edge Function | **[comando]** `pnpm exec supabase functions deploy processar-avatar` |
 | O app | merge em `main`; o Vercel faz o deploy |
 | `config.toml` (auth, limites, template) | **[painel]** replicar à mão, pela tabela do início |

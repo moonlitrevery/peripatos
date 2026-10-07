@@ -64,7 +64,7 @@ select throws_ok(
 -- ninguém além da dona vê o original (que ainda tem EXIF)
 select tests.login('bia');
 select is((select count(*) from storage.objects where bucket_id = 'avatar-uploads'), 0::bigint, 'colega não lê o original');
-select tests.login('adma');
+select tests.login_mfa('adma');
 select is((select count(*) from storage.objects where bucket_id = 'avatar-uploads'), 0::bigint, 'nem admin lê o original');
 select tests.login('ana');
 select is((select count(*) from storage.objects where bucket_id = 'avatar-uploads'), 1::bigint, 'a dona lê o próprio original');
@@ -104,10 +104,10 @@ select throws_ok(
   'PT403', null, 'usuária comum não aprova avatar'
 );
 
-select tests.login('modb');
+select tests.login_mfa('modb');
 select is((select count(*) from storage.objects where bucket_id = 'avatars'), 0::bigint, 'staff de outra instituição não lê');
 
-select tests.login('moda');
+select tests.login_mfa('moda');
 select is((select count(*) from storage.objects where bucket_id = 'avatars'), 1::bigint, 'staff da instituição lê o pendente para moderar');
 select lives_ok(
   format($$ select public.moderar_avatar(%L, true, 'foto adequada') $$, tests.uid('ana')),
