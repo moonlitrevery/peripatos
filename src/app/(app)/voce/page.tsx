@@ -22,6 +22,7 @@ export default async function Voce() {
           preset={perfil.avatar_preset}
           semente={perfil.id}
           tamanho={72}
+          nome={perfil.display_name}
         />
         <div className="min-w-0 pb-1">
           <h1 className="text-3xl leading-tight font-bold break-words">{perfil.display_name}</h1>

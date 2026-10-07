@@ -85,11 +85,11 @@ select is(
 );
 
 select is(
-  (select a.ra || '@' || i.slug
+  (select (a.ra_hmac = private.ra_hmac(i.id, '123456'))::text || '@' || i.slug
    from private.accounts a join public.institutions i on i.id = a.institution_id
    where a.user_id = '11111111-1111-1111-1111-111111111111'),
-  '123456@unisagrado',
-  'RA e instituição são extraídos do e-mail para private.accounts'
+  'true@unisagrado',
+  'a instituição sai do e-mail, e do RA fica só o HMAC em private.accounts'
 );
 
 select is(

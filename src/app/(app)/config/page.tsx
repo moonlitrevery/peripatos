@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { exigirSessao, meuPerfil } from "@/lib/sessao";
+import { exigirSessao, meuCargo, meuPerfil } from "@/lib/sessao";
 import { deLinha } from "@/lib/tags";
-import { Bloqueados, ExcluirConta, FormAvatar, FormPerfil, FormTags } from "./Formularios";
+import { Bloqueados, ExcluirConta, FormAvatar, FormPerfil, FormTags, Sessoes } from "./Formularios";
 
 export const metadata: Metadata = { title: "Configurações" };
 
@@ -10,12 +10,15 @@ export default async function Config() {
   const { supabase, user } = await exigirSessao();
   const perfil = await meuPerfil();
 
-  const [tags, comuns, sensiveis, bloqueios] = await Promise.all([
+  const [tags, comuns, sensiveis, bloqueios, status, cargo] = await Promise.all([
     supabase.from("tags").select("id, slug, name, category, is_sensitive").order("id"),
     supabase.from("profile_tags").select("tag_id").eq("user_id", user.id),
     supabase.from("profile_sensitive_tags").select("tag_id").eq("user_id", user.id),
     supabase.rpc("meus_bloqueios"),
+    supabase.rpc("conta_status"),
+    meuCargo(),
   ]);
+  const conta = status.data as { sensiveis_consentido_em?: string | null } | null;
 
   const secao = "cartao flex flex-col gap-4 scroll-mt-20";
 
@@ -45,6 +48,7 @@ export default async function Config() {
           tags={(tags.data ?? []).map(deLinha)}
           comunsIniciais={(comuns.data ?? []).map((l) => l.tag_id)}
           sensiveisIniciais={(sensiveis.data ?? []).map((l) => l.tag_id)}
+          consentidoEm={conta?.sensiveis_consentido_em ?? null}
         />
       </section>
 
@@ -63,6 +67,27 @@ export default async function Config() {
           lista={(bloqueios.data ?? []).map((b) => ({ id: b.user_id, username: b.username, nome: b.display_name }))}
         />
       </section>
+
+      <section className={secao} aria-labelledby="t-sessoes">
+        <h2 id="t-sessoes" className="text-xl font-bold">
+          Sessões
+        </h2>
+        <Sessoes />
+      </section>
+
+      {cargo && (
+        <section className={secao} aria-labelledby="t-2fa">
+          <h2 id="t-2fa" className="text-xl font-bold">
+            Verificação em duas etapas
+          </h2>
+          <p className="text-tinta-2">
+            Quem modera precisa confirmar um código do aplicativo autenticador a cada login para agir como moderação.
+          </p>
+          <Link href="/moderacao/verificacao" className="btn btn-sec self-start">
+            Configurar ou confirmar
+          </Link>
+        </section>
+      )}
 
       <section className={secao} aria-labelledby="t-excluir">
         <h2 id="t-excluir" className="text-xl font-bold">

@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { concluirOnboarding } from "@/app/acoes/onboarding";
 import { SeletorDeAvatar } from "@/components/SeletorDeAvatar";
 import { SeletorDeTags } from "@/components/SeletorDeTags";
+import { TagsSensiveis } from "@/components/TagsSensiveis";
 import { enviarFoto } from "@/lib/foto";
 import { createClient } from "@/lib/supabase/client";
-import { MAX_TAGS_COMUNS, MAX_TAGS_SENSIVEIS, type Tag } from "@/lib/tags";
+import { TERMOS_VERSAO } from "@/lib/legal";
+import { MAX_TAGS_COMUNS, type Tag } from "@/lib/tags";
 import { idadeEmAnos } from "@/lib/tempo";
 
 const TITULOS = ["Sobre você", "Do que você gosta", "Seu avatar"];
@@ -23,6 +25,8 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
   const [sensiveis, setSensiveis] = useState<number[]>([]);
   const [preset, setPreset] = useState<number | null>(1);
   const [arquivo, setArquivo] = useState<File | null>(null);
+  const [aceitouTermos, setAceitouTermos] = useState(false);
+  const [consentiu, setConsentiu] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
   const titulo = useRef<HTMLHeadingElement>(null);
@@ -38,7 +42,17 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
   const sensiveisDisponiveis = tags.filter((t) => t.sensivel);
 
   function dados() {
-    return { username, displayName, nascimento, bio, tagsComuns: comuns, tagsSensiveis: sensiveis, preset };
+    return {
+      username,
+      displayName,
+      nascimento,
+      bio,
+      tagsComuns: comuns,
+      tagsSensiveis: consentiu ? sensiveis : [],
+      preset,
+      termosAceitos: aceitouTermos ? TERMOS_VERSAO : null,
+      consentiuSensiveis: consentiu,
+    };
   }
 
   function avancarDoPrimeiro() {
@@ -60,6 +74,7 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
       });
       return;
     }
+    if (!aceitouTermos) return setErro("Para continuar é preciso aceitar os Termos de uso e a Política de privacidade.");
     setPasso(1);
   }
 
@@ -168,6 +183,30 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
             </label>
             <textarea id="bio" className="campo" rows={2} maxLength={300} value={bio} onChange={(e) => setBio(e.target.value)} />
           </div>
+          <div className="cartao">
+            <label htmlFor="aceite" className="flex cursor-pointer items-start gap-3">
+              <input
+                id="aceite"
+                type="checkbox"
+                className="mt-1 size-5 shrink-0 accent-[var(--petroleo)]"
+                checked={aceitouTermos}
+                onChange={(e) => setAceitouTermos(e.target.checked)}
+                required
+              />
+              <span>
+                Li e aceito os{" "}
+                <a href="/termos" target="_blank" rel="noopener" className="text-petroleo font-semibold underline underline-offset-4">
+                  Termos de uso
+                </a>{" "}
+                e a{" "}
+                <a href="/privacidade" target="_blank" rel="noopener" className="text-petroleo font-semibold underline underline-offset-4">
+                  Política de privacidade
+                </a>
+                <span className="sr-only"> (abrem em outra aba)</span>.
+              </span>
+            </label>
+            <p className="ajuda">Guardamos a versão que você aceitou e a data. Versão atual: {TERMOS_VERSAO}.</p>
+          </div>
         </>
       )}
 
@@ -182,16 +221,12 @@ export function FormOnboarding({ uid, tags }: { uid: string; tags: Tag[] }) {
           <details className="cartao">
             <summary className="cursor-pointer font-semibold">Identidade e crenças (opcional)</summary>
             <div className="mt-4 flex flex-col gap-4">
-              <p className="text-tinta-2">
-                Orientação, identidade de gênero e religião são tratadas à parte. <strong className="text-tinta">Só aparecem para quem você segue e que te segue de volta</strong>,
-                e só contam na afinidade com essas pessoas. Para todo o resto, é como se você não tivesse marcado nada.
-                Nem a moderação vê. Você pode pular esta parte.
-              </p>
-              <SeletorDeTags
+              <TagsSensiveis
                 tags={sensiveisDisponiveis}
                 selecionadas={sensiveis}
                 aoMudar={setSensiveis}
-                maximo={MAX_TAGS_SENSIVEIS}
+                consentiu={consentiu}
+                aoConsentir={setConsentiu}
                 prefixo="sens"
               />
             </div>

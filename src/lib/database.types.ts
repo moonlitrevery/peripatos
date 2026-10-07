@@ -113,13 +113,13 @@ isOneToOne: false
                   ]
                 },"posts": {
                   Row: {
-                    "author_id": string,"body": string,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"gif_id": string | null,"hidden_at": string | null,"hidden_by": string | null,"id": string,"institution_id": string
+                    "author_id": string,"body": string,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"gif_alt": string | null,"gif_id": string | null,"hidden_at": string | null,"hidden_by": string | null,"id": string,"institution_id": string
                   }
                   Insert: {
-                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"gif_id"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id"?: string
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"gif_alt"?: string | null,"gif_id"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id"?: string
                   }
                   Update: {
-                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"gif_id"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id"?: string
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"gif_alt"?: string | null,"gif_id"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id"?: string
                   }
                   Relationships: [
                     {
@@ -321,7 +321,10 @@ isOneToOne: false
 { Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
 "completar_onboarding":
-{ Args: { "p_bio"?: string,"p_data_nascimento": string,"p_display_name": string,"p_username": string }; Returns: Json
+{ Args: { "p_bio"?: string,"p_data_nascimento": string,"p_display_name": string,"p_termos_versao"?: string,"p_username": string }; Returns: Json
+                           },
+"consentir_tags_sensiveis":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "conta_status":
 { Args: Record<PropertyKey, never>; Returns: Json
@@ -337,7 +340,7 @@ isOneToOne: false
                            },
 "feed":
 { Args: { "p_cursor"?: string,"p_limite"?: number }; Returns: {
-              "afinidade": number,"author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"score": number,"username": string
+              "afinidade": number,"author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"score": number,"username": string
             }[]
                            },
 "meus_bloqueios":
@@ -361,6 +364,9 @@ isOneToOne: false
               "afinidade": number,"avatar_path": string,"avatar_preset": number,"bio": string,"display_name": string,"mutual": boolean,"tags_em_comum": Json,"user_id": string,"username": string
             }[]
                            },
+"registrar_busca_gif":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "remover_cargo":
 { Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
@@ -372,6 +378,9 @@ isOneToOne: false
                            },
 "restaurar_post":
 { Args: { "p_motivo": string,"p_post_id": string }; Returns: undefined
+                           },
+"revogar_tags_sensiveis":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            }
           }
           Enums: {

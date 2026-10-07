@@ -8,7 +8,7 @@ type GifEncontrado = { id: string; titulo: string; previa: string; largura: numb
 type Props = {
   aberto: boolean;
   aoFechar: () => void;
-  aoEscolher: (gif: { id: string; previa: string }) => void;
+  aoEscolher: (gif: { id: string; previa: string; titulo: string }) => void;
 };
 
 export function SeletorDeGif({ aberto, aoFechar, aoEscolher }: Props) {
@@ -79,7 +79,7 @@ export function SeletorDeGif({ aberto, aoFechar, aoEscolher }: Props) {
                   type="button"
                   className="bg-papel-2 block w-full overflow-hidden rounded-xl"
                   onClick={() => {
-                    aoEscolher({ id: g.id, previa: g.previa });
+                    aoEscolher({ id: g.id, previa: g.previa, titulo: g.titulo });
                     aoFechar();
                   }}
                 >

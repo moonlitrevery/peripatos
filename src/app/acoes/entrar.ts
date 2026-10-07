@@ -3,10 +3,12 @@
 import { redirect } from "next/navigation";
 import { falha, ok, type Resultado } from "@/lib/erros";
 import { createClient } from "@/lib/supabase/server";
+import * as v from "@/lib/validacao";
 
-export async function pedirCodigo(emailBruto: string): Promise<Resultado> {
-  const email = emailBruto.trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return falha("Digite seu e-mail institucional completo.");
+export async function pedirCodigo(emailBruto: unknown): Promise<Resultado> {
+  const e = v.validar(v.email, emailBruto);
+  if (!e.ok) return e.falha;
+  const email = e.dado;
 
   const supabase = await createClient();
   // Sem emailRedirectTo: o e-mail leva só o código de 6 dígitos, nunca um link.
@@ -21,10 +23,13 @@ export async function pedirCodigo(emailBruto: string): Promise<Resultado> {
   return falha("Não foi possível enviar o código agora. Tente de novo em instantes.");
 }
 
-export async function verificarCodigo(emailBruto: string, codigoBruto: string): Promise<Resultado> {
-  const email = emailBruto.trim().toLowerCase();
-  const token = codigoBruto.replace(/\D/g, "");
-  if (token.length !== 6) return falha("O código tem 6 dígitos.");
+export async function verificarCodigo(emailBruto: unknown, codigoBruto: unknown): Promise<Resultado> {
+  const e = v.validar(v.email, emailBruto);
+  if (!e.ok) return e.falha;
+  const c = v.validar(v.codigoOtp, codigoBruto);
+  if (!c.ok) return c.falha;
+  const email = e.dado;
+  const token = c.dado;
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
@@ -43,8 +48,18 @@ export async function verificarCodigo(emailBruto: string, codigoBruto: string): 
   redirect(perfil?.onboarding_completo === true ? "/" : "/onboarding");
 }
 
+// Encerra a sessão deste aparelho.
 export async function sair() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/entrar");
+}
+
+// Encerra TODAS as sessões da conta: revoga os refresh tokens de todos os
+// aparelhos. Um aparelho que já esteja com um token de acesso válido continua
+// até ele vencer (no máximo 1 hora); depois disso não consegue renovar.
+export async function sairDeTodosOsDispositivos() {
+  const supabase = await createClient();
+  await supabase.auth.signOut({ scope: "global" });
+  redirect("/entrar?conta=saiu-de-tudo");
 }

@@ -1,32 +1,49 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { falha, mensagemDeErro, ok, type Resultado } from "@/lib/erros";
 import { gravarTags } from "@/lib/gravar-tags";
+import { TERMOS_VERSAO } from "@/lib/legal";
 import { createClient } from "@/lib/supabase/server";
+import * as v from "@/lib/validacao";
 
-type Dados = {
-  username: string;
-  displayName: string;
-  nascimento: string;
-  bio: string;
-  tagsComuns: number[];
-  tagsSensiveis: number[];
-  preset: number | null;
-};
+const Dados = z.object({
+  username: v.username,
+  displayName: v.nomeDeExibicao,
+  nascimento: v.dataDeNascimento,
+  bio: v.bio,
+  tagsComuns: v.tagsComuns,
+  tagsSensiveis: v.tagsSensiveis,
+  preset: v.avatarPronto.nullable(),
+  // A versão dos termos que a tela mostrou e a pessoa aceitou.
+  termosAceitos: z.string().max(40).nullable(),
+  // Consentimento específico para identidade e crenças (LGPD, art. 11).
+  consentiuSensiveis: z.boolean(),
+});
 
-export async function concluirOnboarding(d: Dados): Promise<Resultado> {
+export async function concluirOnboarding(bruto: unknown): Promise<Resultado> {
+  const r = v.validar(Dados, bruto);
+  if (!r.ok) return r.falha;
+  const d = r.dado;
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return falha("Sua sessão expirou. Entre de novo.");
 
+  if (d.tagsSensiveis.length > 0 && !d.consentiuSensiveis) {
+    return falha("Para marcar identidade ou crenças é preciso dar o consentimento específico.");
+  }
+
+  // O banco confere de novo se a versão aceita é a vigente e registra a data.
   const { data, error } = await supabase.rpc("completar_onboarding", {
-    p_username: d.username.trim().toLowerCase(),
+    p_username: d.username,
     p_display_name: d.displayName,
     p_data_nascimento: d.nascimento,
     p_bio: d.bio,
+    p_termos_versao: d.termosAceitos === TERMOS_VERSAO ? TERMOS_VERSAO : undefined,
   });
   if (error) return falha(mensagemDeErro(error));
 
@@ -38,6 +55,11 @@ export async function concluirOnboarding(d: Dados): Promise<Resultado> {
     // pessoa de lá antes de a mensagem aparecer.
     await supabase.auth.signOut({ scope: "local" });
     redirect("/maiores-de-18");
+  }
+
+  if (d.tagsSensiveis.length > 0) {
+    const consentimento = await supabase.rpc("consentir_tags_sensiveis");
+    if (consentimento.error) return falha(mensagemDeErro(consentimento.error));
   }
 
   const erroTags = await gravarTags(supabase, user.id, d.tagsComuns, d.tagsSensiveis);

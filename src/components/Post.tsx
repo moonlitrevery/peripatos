@@ -12,7 +12,7 @@ export function Post({ item, acoes }: { item: ItemFeed; acoes?: ReactNode }) {
         <p className="text-tinta-2 text-[0.75rem] font-bold tracking-wide uppercase">Fora do seu círculo</p>
       )}
       <header className="flex items-center gap-3">
-        <Avatar url={item.avatarUrl} preset={item.preset} semente={item.autorId} />
+        <Avatar url={item.avatarUrl} preset={item.preset} semente={item.autorId} nome={item.nome} />
         <div className="min-w-0">
           <Link href={`/u/${item.username}`} className="font-display block truncate text-[1.0625rem] leading-tight font-bold">
             {item.origem === "proprio" ? "Você" : item.nome}
@@ -24,7 +24,7 @@ export function Post({ item, acoes }: { item: ItemFeed; acoes?: ReactNode }) {
         </div>
       </header>
       {item.corpo && <p className="break-words whitespace-pre-wrap">{item.corpo}</p>}
-      {item.gifId && <Gif id={item.gifId} />}
+      {item.gifId && <Gif id={item.gifId} alt={item.gifAlt} />}
       {acoes && <footer className="flex flex-wrap items-center gap-2">{acoes}</footer>}
     </article>
   );
