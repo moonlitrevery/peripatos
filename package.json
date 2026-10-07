@@ -35,7 +35,7 @@
     "exifr": "^7",
     "supabase": "^2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "packageManager": "pnpm@12.9.1"
 }
