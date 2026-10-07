@@ -17,16 +17,16 @@ test.describe("Moderação", () => {
     await contexto.close();
   });
 
-  test("quem é da moderação entra", async ({ browser }) => {
-    const contexto = await contextoDe(browser, "moderadora");
+  // O caminho completo (cadastrar o autenticador e entrar) está em 11-mfa.
+  test("quem é da moderação, sem o segundo fator, é mandado confirmar antes", async ({ browser }) => {
+    const contexto = await contextoDe(browser, "admin");
     const page = await contexto.newPage();
 
     await page.goto("/voce");
     await page.getByRole("link", { name: "Moderação" }).click();
-    await expect(page).toHaveURL(/\/moderacao$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Moderação" })).toBeVisible();
-    await expect(page.getByRole("heading", { level: 2, name: /^Denúncias em aberto/ })).toBeVisible();
-    await expect(page.getByRole("heading", { level: 2, name: /^Fotos aguardando aprovação/ })).toBeVisible();
+    await expect(page).toHaveURL(/\/moderacao\/verificacao$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Verificação em duas etapas" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: /^Denúncias em aberto/ })).toHaveCount(0);
 
     await contexto.close();
   });

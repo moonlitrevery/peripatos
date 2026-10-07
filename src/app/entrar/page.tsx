@@ -7,6 +7,7 @@ export const metadata: Metadata = { title: "Entrar" };
 
 const AVISOS: Record<string, string> = {
   excluida: "Sua conta foi excluída. Seus dados foram apagados.",
+  "saiu-de-tudo": "Você saiu de todos os dispositivos.",
   menor: "O Peripatos é para maiores de 18. Volte quando fizer aniversário. Apagamos os dados deste cadastro.",
 };
 
@@ -22,6 +23,9 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
         <p className="text-tinta-2">
           Gente da sua universidade que gosta do que você gosta. Para maiores de 18.
         </p>
+        <p className="fino">
+          Projeto independente. Não é um serviço oficial nem tem vínculo com nenhuma universidade.
+        </p>
       </header>
 
       {aviso && (
@@ -33,7 +37,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
       <FormEntrar />
 
       <p className="fino">
-        Ao entrar você concorda com os{" "}
+        Antes de criar seu perfil você vai ler e aceitar os{" "}
         <Link href="/termos" className="text-petroleo font-semibold underline underline-offset-4">
           Termos de uso
         </Link>{" "}

@@ -62,7 +62,9 @@ as $$
   from tests.users u
   join private.accounts a on a.user_id = u.id
   where position(u.email in p_dump) > 0
-     or position(a.ra in p_dump) > 0
+     -- o RA não é mais guardado: sai do próprio e-mail (os dígitos depois do último ponto)
+     or position(substring(split_part(u.email, '@', 1) from '\.([0-9]+)$') in p_dump) > 0
+     or position(encode(a.ra_hmac, 'hex') in p_dump) > 0
      or position(split_part(u.email, '@', 2) in p_dump) > 0
 $$;
 grant execute on function tests.vazou(text) to authenticated;
@@ -74,17 +76,19 @@ select ok(
 );
 select is(tests.vazou(tests.dump_publico()), null, 'usuária comum: nenhum e-mail, domínio ou RA em nada do que ela lê');
 
-select tests.login('adma');
+select tests.login_mfa('adma');
 select is(tests.vazou(tests.dump_publico()), null, 'admin: nenhum e-mail, domínio ou RA em nada do que ele lê');
 
-select tests.login('moda');
+select tests.login_mfa('moda');
 select ok(position('"reason": "spam"' in tests.dump_publico()) > 0, 'controle: o despejo da staff inclui as denúncias');
 select is(tests.vazou(tests.dump_publico()), null, 'moderador: nenhum e-mail, domínio ou RA em nada do que ele lê');
 
--- a data de nascimento também não
+-- a data de nascimento nem existe mais no banco (ver 140_auditoria.sql); as
+-- colunas que a substituíram também não saem por lugar nenhum
 select is(
-  position('2000-01-01' in tests.dump_publico()), 0,
-  'a data de nascimento não aparece em nada do que a staff lê'
+  position('maioridade_verificada_em' in tests.dump_publico()) + position('ra_hmac' in tests.dump_publico()),
+  0,
+  'as colunas de private.accounts não aparecem em nada do que a staff lê'
 );
 
 select * from finish();

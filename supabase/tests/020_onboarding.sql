@@ -65,12 +65,12 @@ select throws_ok(
 -- Onboarding de adulto
 -- ---------------------------------------------------------------------------
 select throws_ok(
-  $$ select public.completar_onboarding('ana', 'Outro Nome', date '2000-05-05') $$, 'PT409', null,
+  $$ select public.completar_onboarding('ana', 'Outro Nome', date '2000-05-05', null, private.termos_versao_atual()) $$, 'PT409', null,
   'username já usado na instituição é recusado'
 );
 
 select is(
-  public.completar_onboarding('novo_user', 'Nome Social', date '2000-05-05') ->> 'ativo',
+  public.completar_onboarding('novo_user', 'Nome Social', date '2000-05-05', null, private.termos_versao_atual()) ->> 'ativo',
   'true',
   'adulto que completa o onboarding fica ativo'
 );
@@ -83,8 +83,8 @@ select lives_ok(
   'depois do onboarding: segue'
 );
 select throws_ok(
-  $$ select public.completar_onboarding('novo_user2', 'Nome', date '1990-01-01') $$, 'PT409', null,
-  'onboarding não pode ser refeito (data de nascimento trava)'
+  $$ select public.completar_onboarding('novo_user2', 'Nome', date '1990-01-01', null, private.termos_versao_atual()) $$, 'PT409', null,
+  'onboarding não pode ser refeito'
 );
 
 -- ---------------------------------------------------------------------------
@@ -97,7 +97,8 @@ select tests.login('menor');
 select is(
   public.completar_onboarding(
     'menor_user', 'Menor',
-    ((now() at time zone 'America/Sao_Paulo')::date - interval '18 years' + interval '1 day')::date
+    ((now() at time zone 'America/Sao_Paulo')::date - interval '18 years' + interval '1 day')::date,
+    null, private.termos_versao_atual()
   ),
   '{"onboarding_completo": false, "ativo": false, "menor_de_idade": true, "conta_apagada": true}'::jsonb,
   'quem faz 18 só amanhã: a RPC avisa que é menor e que a conta foi apagada'
@@ -118,7 +119,7 @@ select is(
         + (select count(*) from private.accounts where user_id = (select id from menor))
         + (select count(*) from public.profiles where id = (select id from menor))),
   0::bigint,
-  'do menor não ficou nada: nem usuário do Auth, nem RA e data em private.accounts, nem perfil'
+  'do menor não ficou nada: nem usuário do Auth, nem conta em private.accounts, nem perfil'
 );
 select is(
   (select count(*) from public.profiles where username = 'menor_user'), 0::bigint,
@@ -135,14 +136,15 @@ select tests.login('aniversariante');
 select is(
   public.completar_onboarding(
     'aniversariante', 'Aniversariante',
-    ((now() at time zone 'America/Sao_Paulo')::date - interval '18 years')::date
+    ((now() at time zone 'America/Sao_Paulo')::date - interval '18 years')::date,
+    null, private.termos_versao_atual()
   ) ->> 'ativo',
   'true',
   'quem faz 18 hoje completa o onboarding e fica ativo'
 );
 select is(
-  public.conta_status() - 'onboarding_completo',
-  '{"data_nascimento_informada": true, "maior_de_idade": true, "banido": false, "ativo": true}'::jsonb,
+  public.conta_status() - 'onboarding_completo' - 'termos_aceitos_em',
+  '{"maior_de_idade": true, "banido": false, "ativo": true, "termos_versao": "2026-10-06-rascunho", "termos_em_dia": true, "sensiveis_consentido_em": null}'::jsonb,
   'conta_status não devolve a data, só o resultado'
 );
 

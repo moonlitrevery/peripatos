@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PaginaLegal } from "@/components/PaginaLegal";
+import { TERMOS_VERSAO } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Termos de uso" };
 
@@ -8,7 +9,11 @@ export default function Termos() {
     <PaginaLegal titulo="Termos de uso">
       <p>
         O Peripatos é uma rede para universitários encontrarem gente com gostos parecidos. Não é um aplicativo de
-        namoro e não é anônimo: cada conta corresponde a um e-mail institucional.
+        namoro e não é anônimo: cada conta corresponde a um e-mail institucional. Versão {TERMOS_VERSAO}.
+      </p>
+      <p>
+        Você aceita estes termos e a Política de privacidade ao criar seu perfil. Guardamos qual versão você aceitou e
+        quando. O uso é gratuito: não há planos pagos, cobranças nem anúncios.
       </p>
 
       <h2>Quem pode usar</h2>
@@ -21,7 +26,8 @@ export default function Termos() {
       <p>
         O Peripatos é um projeto independente. Não é afiliado, patrocinado nem endossado por nenhuma universidade,
         inclusive aquelas cujos e-mails são aceitos no cadastro. O e-mail institucional serve só para confirmar que
-        você é aluno.
+        você é aluno. Nomes e marcas de instituições citados no app pertencem a elas e aparecem apenas para indicar
+        quais e-mails são aceitos.
       </p>
 
       <h2>O que não pode</h2>
@@ -70,7 +76,8 @@ export default function Termos() {
 
       <h2>Mudanças e contato</h2>
       <p>
-        Estes termos podem mudar; avisaremos dentro do app antes de mudanças importantes. Dúvidas:{" "}
+        Estes termos podem mudar; avisaremos dentro do app antes de mudanças importantes.
+        Responsável pelo Peripatos: <strong>[NOME DO RESPONSÁVEL, a definir]</strong>. Dúvidas:{" "}
         <strong>contato@EXEMPLO.com.br</strong> (endereço provisório, a definir).
       </p>
     </PaginaLegal>

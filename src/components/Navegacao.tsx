@@ -59,7 +59,7 @@ export function Navegacao() {
                 {aba.rotulo}
               </Link>
             ) : (
-              <span aria-disabled="true" className={`${base} text-tinta-2 opacity-60`}>
+              <span aria-disabled="true" className={`${base} text-tinta-2`}>
                 <Icone d={aba.icone} />
                 <span>
                   {aba.rotulo}

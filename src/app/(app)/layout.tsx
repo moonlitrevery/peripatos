@@ -6,7 +6,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <Navegacao />
-      <main id="conteudo" className="mx-auto w-full max-w-xl flex-1 px-4 pt-5 pb-28 md:pb-12">
+      <main id="conteudo" className="mx-auto w-full max-w-xl flex-1 px-5 pt-5 pb-28 md:pb-12">
         {children}
       </main>
     </>
