@@ -30,7 +30,7 @@ update public.profiles set created_at = now() - interval '60 days';
 -- ---------------------------------------------------------------------------
 -- Catálogo
 -- ---------------------------------------------------------------------------
-select is((select count(*) from public.achievements), 14::bigint, 'o catálogo tem as 14 conquistas');
+select is((select count(*) from public.achievements), 19::bigint, 'o catálogo tem as 19 conquistas');
 select is(
   (select array_agg(slug order by slug) from public.achievements where is_secret),
   array['coruja-de-atena', 'minotauro'], 'secretas: Coruja de Atena e Minotauro'
@@ -40,14 +40,14 @@ select is(
   array['coruja-de-atena'], 'privada por padrão: só a Coruja'
 );
 select is(
-  (select array_agg(slug) from public.achievements where is_manual),
-  array['heracles'], 'concedida à mão: só Héracles'
+  (select array_agg(slug order by slug) from public.achievements where is_manual),
+  array['hefesto', 'heracles'], 'concedidas à mão: Hefesto e Héracles'
 );
 select is(
-  (select count(distinct color) from public.achievements), 14::bigint, 'cada conquista tem a sua cor'
+  (select count(distinct color) from public.achievements), 19::bigint, 'cada conquista tem a sua cor'
 );
 select is(
-  (select count(distinct emoji) from public.achievements), 14::bigint, 'e o seu emoji'
+  (select count(distinct emoji) from public.achievements), 19::bigint, 'e o seu emoji'
 );
 select is(
   (select count(*) from public.achievements where btrim(emoji_label) = ''), 0::bigint,

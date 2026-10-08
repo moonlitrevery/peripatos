@@ -260,6 +260,16 @@ export type AchadoAxe = { tela: string; regra: string; impacto: string; alvo: st
 export async function examinarAxe(page: Page, tela: string, achados: AchadoAxe[]) {
   // As fontes entram com display: swap; espera para medir o contraste do texto final.
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  // Trocar de tema anima as cores (transition-colors nos botões): medir no meio
+  // do caminho dá um contraste que não existe em nenhum dos dois temas.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a instanceof CSSTransition)
+        .map((a) => a.finished.catch(() => undefined)),
+    ).then(() => undefined),
+  );
   const resultado = await new AxeBuilder({ page }).withTags(REGRAS_AXE).analyze();
   // Se o axe não avaliou nada, o "zero violações" não quer dizer nada.
   expect(resultado.passes.length, `axe não avaliou ${tela}`).toBeGreaterThan(5);

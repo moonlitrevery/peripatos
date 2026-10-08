@@ -9,7 +9,9 @@ export type ItemDoMenu = { rotulo: string; aoEscolher: () => void; perigo?: bool
 //   - Enter, Espaço ou seta para baixo abrem e levam o foco ao primeiro item;
 //   - setas andam pelos itens, Home e End vão às pontas;
 //   - Esc fecha e devolve o foco ao botão; Tab ou clicar fora fecham.
-export function MenuDeAcoes({ rotulo, itens }: { rotulo: string; itens: ItemDoMenu[] }) {
+// `lado` diz para onde a lista abre: à direita do botão (padrão) ou, quando o
+// botão fica na borda direita do cartão, para a esquerda.
+export function MenuDeAcoes({ rotulo, itens, lado = "direita" }: { rotulo: string; itens: ItemDoMenu[]; lado?: "direita" | "esquerda" }) {
   const [aberto, setAberto] = useState(false);
   const id = useId();
   const raiz = useRef<HTMLDivElement>(null);
@@ -65,7 +67,7 @@ export function MenuDeAcoes({ rotulo, itens }: { rotulo: string; itens: ItemDoMe
       <button
         ref={botao}
         type="button"
-        className="btn btn-qui btn-peq w-11 px-0"
+        className="btn btn-qui btn-peq min-h-11 w-11 px-0"
         aria-label={rotulo}
         aria-haspopup="menu"
         aria-expanded={aberto}
@@ -91,7 +93,7 @@ export function MenuDeAcoes({ rotulo, itens }: { rotulo: string; itens: ItemDoMe
           role="menu"
           aria-label={rotulo}
           onKeyDown={teclaNoMenu}
-          className="bg-papel border-linha absolute left-0 z-20 mt-2 flex w-64 flex-col rounded-2xl border p-1.5 shadow-lg"
+          className={`bg-papel border-linha absolute z-20 mt-2 flex w-64 flex-col rounded-2xl border p-1.5 shadow-lg ${lado === "esquerda" ? "right-0" : "left-0"}`}
         >
           {itens.map((item) => (
             <button
@@ -102,7 +104,10 @@ export function MenuDeAcoes({ rotulo, itens }: { rotulo: string; itens: ItemDoMe
               className={`item-do-menu ${item.perigo ? "item-do-menu-perigo" : ""}`}
               onClick={() => {
                 // Fecha antes: o que o item abre (um diálogo) leva o foco consigo.
+                // O foco passa pelo botão para o diálogo ter para onde devolvê-lo
+                // ao fechar (o item do menu já não existe mais).
                 setAberto(false);
+                botao.current?.focus();
                 item.aoEscolher();
               }}
             >

@@ -114,7 +114,12 @@ test.describe("Início: Para você e Seguindo", () => {
 
     // Aceito: aparece na hora e o formulário esvazia.
     const bom = `Otimista ${Date.now()}`;
-    await campo.fill(bom);
+    // O que é digitado antes de a página hidratar se perde: repete até o
+    // formulário reconhecer o texto (o botão sai do desabilitado).
+    await expect(async () => {
+      await campo.fill(bom);
+      await expect(page.getByRole("button", { name: "Publicar" })).toBeEnabled({ timeout: 1000 });
+    }).toPass();
     await page.getByRole("button", { name: "Publicar" }).click();
     await expect(posts(page).first()).toContainText(bom);
     await expect(campo).toHaveValue("");
@@ -452,7 +457,8 @@ test.describe("Layout responsivo", () => {
           // Desktop largo: coluna da direita com gente parecida (menos em Gente, que já é a lista).
           await expect(sugestoes).toBeVisible();
           if (tela !== "/gente") {
-            await expect(sugestoes.getByRole("heading", { name: "Gente parecida com você" })).toBeVisible();
+            // "Recém-chegados" quando a Lia já segue todo mundo parecido (e2e/19).
+            await expect(sugestoes.getByRole("heading", { name: /^(Gente parecida com você|Recém-chegados)$/ })).toBeVisible();
             const s = (await sugestoes.boundingBox())!;
             expect(s.x).toBeGreaterThanOrEqual(m.main.x + m.main.w);
           }
@@ -535,10 +541,11 @@ test.describe("Layout responsivo", () => {
     const noDesktop = pedidas(p2);
     await p2.goto("/voce");
     await expect(p2.getByRole("complementary", { name: "Sugestões" }).getByRole("link", { name: "Ver todo mundo" })).toBeVisible();
-    await p2.waitForTimeout(1200);
+    // No desktop há uma ação a mais (a das sugestões); no celular, não. As
+    // ações do Next saem uma de cada vez: num servidor lento a das sugestões
+    // pode demorar a sair, então espera por ela em vez de contar com prazo fixo.
+    await expect.poll(() => noDesktop.length).toBeGreaterThan(noCelular.length);
     await desktop.close();
-    // No desktop há uma ação a mais (a das sugestões); no celular, não.
-    expect(noDesktop.length).toBeGreaterThan(noCelular.length);
   });
 
   test("hover em tudo que é clicável (com ponteiro de verdade)", async ({ browser }) => {
