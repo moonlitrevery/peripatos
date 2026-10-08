@@ -1,11 +1,12 @@
 # Notificações e conquistas
 
 O que o marco 3 acrescentou e o que precisa de uma decisão sua em produção.
-Tudo aqui mora no banco: `supabase/migrations/20261009000002_notificacoes_e_conquistas.sql`.
+Tudo aqui mora no banco: `supabase/migrations/20261009000002_notificacoes_e_conquistas.sql`
+(e, para Eco, Eureka, Hefesto, Nóstos e Panateneia, `20261012000001_recem_chegados_e_conquistas.sql`).
 
 ## O que você precisa configurar
 
-Os dois valores abaixo ficam em `private.config`, uma tabela que a API não
+Os valores abaixo ficam em `private.config`, uma tabela que a API não
 alcança. Mudam por ambiente e **não vão para o git nem para uma migration**.
 Rode no SQL Editor do painel do Supabase (ou com `psql`), como `postgres`.
 
@@ -54,6 +55,30 @@ passa pelo código do cliente.
 Limite de tentativas, por pessoa: **5 por hora e 20 por dia**. Toda tentativa
 conta, certa ou errada, e acima do limite a RPC responde 429 mesmo que a
 resposta esteja certa. Quem já resolveu não gasta tentativa.
+
+### 3. A semana de abertura pública (conquista Panateneia)
+
+Panateneia é de quem **concluiu o onboarding** dentro da janela. Enquanto
+faltar uma das duas datas, ninguém ganha. O início conta, o fim não.
+
+```sql
+insert into private.config (chave, valor) values
+  ('panateneia_inicio', '2027-03-01 00:00:00-03'),
+  ('panateneia_fim',    '2027-03-08 00:00:00-03')
+on conflict (chave) do update set valor = excluded.valor, atualizado_em = now();
+```
+
+Defina **antes** de a semana começar: a conquista é conferida na hora em que
+a pessoa conclui o onboarding. Se a janela for definida (ou corrigida) depois,
+quem concluiu dentro dela só ganha na próxima vez em que o perfil for
+conferido (ao mexer na bio, no avatar ou nos gostos). Para conceder de uma vez
+a todo mundo que se encaixa:
+
+```sql
+select private.conquistas_do_perfil(p.id) from public.profiles p where p.onboarding_completo;
+```
+
+Mudar ou apagar a janela não tira a conquista de quem já ganhou.
 
 ## Notificações
 
@@ -119,6 +144,11 @@ termos atualizados.
 | Héracles | reportou um bug confirmado | RPC `conceder_conquista`, só admin com 2FA, registrada em `moderation_actions` |
 | Coruja de Atena (secreta, privada) | post ou mensagem entre 01:00 e 04:30, horário de Brasília | triggers em `posts` e `messages` |
 | Minotauro (secreta) | resolver o enigma | RPC `responder_enigma` |
+| Eco | alguém seguiu de volta menos de uma hora depois de você seguir (ganha quem seguiu primeiro) | trigger em `follows`, ao virar mútuo |
+| Eureka | pediu uma tag nova e o pedido foi aprovado | trigger em `tag_requests` (status → aprovada) |
+| Hefesto | deu uma sugestão que virou funcionalidade | RPC `conceder_conquista`, só admin com 2FA, registrada em `moderation_actions` |
+| Nóstos | publicou um post 30 dias ou mais depois do post anterior | trigger em `posts` |
+| Panateneia | concluiu o onboarding entre `panateneia_inicio` e `panateneia_fim` | ao concluir o onboarding |
 
 - **Só o banco concede.** Não existe INSERT nem DELETE em `user_achievements`
   para nenhum papel da API. A única coluna que a pessoa altera é `hidden`, e só
@@ -157,6 +187,16 @@ justificam (Fundador, Peripatético, Hermes, Coruja, Polímata, Conhece-te, e as
 de mútuo), e cada uma gera a notificação de conquista nova.
 
 ## Decisões que tomei e que você pode querer rever
+
+- **Eco** é de quem seguiu primeiro, e usa `follows.created_at`, que já
+  existia. Deixar de seguir e seguir de novo cria um follow com data nova.
+- **Nóstos** conta o post anterior mesmo apagado ou ocultado (a pessoa
+  publicou), e o primeiro post de alguém nunca é Nóstos.
+- **Panateneia** usa a data em que o onboarding foi concluído
+  (`accounts.maioridade_verificada_em`), não a da criação da conta.
+- **Quem já tinha conta** recebeu, na migration
+  `20261012000001_recem_chegados_e_conquistas.sql`, Eco, Eureka e Nóstos que os
+  dados existentes justificam, com a notificação de conquista nova.
 
 - **Fundador sem data = beta aberto.** A alternativa era inventar uma data.
 - **Xênia** usa "tem exatamente um mútuo agora" como "primeiro mútuo": não há

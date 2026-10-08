@@ -6,6 +6,7 @@ import { AcoesDoPerfil } from "@/components/AcoesDoPerfil";
 import { Avatar } from "@/components/Avatar";
 import { Cargo } from "@/components/Cargo";
 import { SeloDeConquista } from "@/components/Conquista";
+import { MenuDoPost } from "@/components/MenuDoPost";
 import { Post } from "@/components/Post";
 import { SeloMutuo } from "@/components/SeloMutuo";
 import { TagChip } from "@/components/TagChip";
@@ -21,6 +22,12 @@ export async function generateMetadata({ params }: PageProps<"/u/[username]">): 
 }
 
 const TAGS = "tags(id, slug, name, category, is_sensitive)";
+
+// As conquistas que só a administração concede, à mão.
+const MANUAIS = [
+  { slug: "heracles", nome: "Héracles", para: "Para quem reportou um bug que foi confirmado." },
+  { slug: "hefesto", nome: "Hefesto", para: "Para quem deu uma sugestão que virou funcionalidade." },
+];
 
 export default async function Perfil({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
@@ -71,10 +78,10 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
   const conquistas = (conquistasDoPerfil.data ?? [])
     .flatMap((l) => (l.achievements ? [{ ...conquistaDeLinha(l.achievements), oculta: l.hidden }] : []))
     .sort((a, b) => a.posicao - b.posicao);
-  // Esconder o botão é conforto: a RPC recusa quem não é admin com o segundo
+  // Esconder os botões é conforto: a RPC recusa quem não é admin com o segundo
   // fator, e registra a concessão em moderation_actions.
-  const podeConcederHeracles =
-    !ehMeu && cargoDeQuemVe === "admin" && nivel === "aal2" && !conquistas.some((c) => c.slug === "heracles");
+  const podeConceder = !ehMeu && cargoDeQuemVe === "admin" && nivel === "aal2";
+  const concessoes = podeConceder ? MANUAIS.filter((m) => !conquistas.some((c) => c.slug === m.slug)) : [];
 
   const doPerfil: Tag[] = (tags.data ?? []).flatMap((l) => (l.tags ? [deLinha(l.tags)] : []));
   // Orientação, gênero e religião ficam numa seção à parte ("Sobre"), sem
@@ -162,7 +169,7 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
         </section>
       )}
 
-      {(conquistas.length > 0 || ehMeu || podeConcederHeracles) && (
+      {(conquistas.length > 0 || ehMeu || concessoes.length > 0) && (
         <section aria-labelledby="titulo-conquistas" className="flex flex-col gap-3">
           <h2 id="titulo-conquistas" className="text-xl font-bold">
             Conquistas
@@ -186,14 +193,17 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
               </Link>
             </p>
           )}
-          {podeConcederHeracles && (
-            <div>
-              <AcaoComMotivo
-                rotulo="Conceder Héracles"
-                titulo={`Conceder Héracles a ${nome}`}
-                explicacao="Para quem reportou um bug que foi confirmado. A concessão é permanente e fica registrada."
-                acao={concederConquista.bind(null, perfil.id, "heracles")}
-              />
+          {concessoes.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {concessoes.map((m) => (
+                <AcaoComMotivo
+                  key={m.slug}
+                  rotulo={`Conceder ${m.nome}`}
+                  titulo={`Conceder ${m.nome} a ${nome}`}
+                  explicacao={`${m.para} A concessão é permanente e fica registrada.`}
+                  acao={concederConquista.bind(null, perfil.id, m.slug)}
+                />
+              ))}
             </div>
           )}
         </section>
@@ -224,6 +234,7 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
                     editado: p.edited_at !== null,
                     origem: "afinidade",
                   }}
+                  menu={ehMeu ? undefined : <MenuDoPost id={p.id} nome={nome} />}
                 />
               </li>
             ))}

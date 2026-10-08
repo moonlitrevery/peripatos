@@ -452,7 +452,8 @@ test.describe("Layout responsivo", () => {
           // Desktop largo: coluna da direita com gente parecida (menos em Gente, que já é a lista).
           await expect(sugestoes).toBeVisible();
           if (tela !== "/gente") {
-            await expect(sugestoes.getByRole("heading", { name: "Gente parecida com você" })).toBeVisible();
+            // "Recém-chegados" quando a Lia já segue todo mundo parecido (e2e/19).
+            await expect(sugestoes.getByRole("heading", { name: /^(Gente parecida com você|Recém-chegados)$/ })).toBeVisible();
             const s = (await sugestoes.boundingBox())!;
             expect(s.x).toBeGreaterThanOrEqual(m.main.x + m.main.w);
           }

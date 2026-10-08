@@ -600,6 +600,11 @@ isOneToOne: false
               "destinatario": string,"tipo": string
             }[]
                            },
+"recem_chegados":
+{ Args: { "p_limite"?: number }; Returns: {
+              "avatar_path": string,"avatar_preset": number,"display_name": string,"seguindo": boolean,"tags_em_comum": Json,"user_id": string,"username": string
+            }[]
+                           },
 "registrar_busca_gif":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },

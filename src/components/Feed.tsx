@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { apagarPost, maisFeed, publicar } from "@/app/acoes/social";
-import { Denunciar } from "@/components/Denunciar";
 import { urlDoGif } from "@/components/Gif";
+import { MenuDoPost } from "@/components/MenuDoPost";
 import { Post } from "@/components/Post";
 import { SeletorDeGif } from "@/components/SeletorDeGif";
 import { lembrarAba, type AbaDoFeed } from "@/lib/aba-do-inicio";
@@ -268,10 +268,9 @@ export function Feed({ abaInicial, inicial, cursorInicial, eu }: Props) {
                     </span>
                   ) : item.autorId === eu.id ? (
                     <ApagarPost id={item.id} aoApagar={() => remover(item.id)} />
-                  ) : (
-                    <Denunciar alvo={{ postId: item.id }} className="fino underline underline-offset-4" />
-                  )
+                  ) : undefined
                 }
+                menu={!item.enviando && item.autorId !== eu.id ? <MenuDoPost id={item.id} nome={item.nome} /> : undefined}
               />
             </li>
           ))}

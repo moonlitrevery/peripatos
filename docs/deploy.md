@@ -378,6 +378,7 @@ O que fazer, em ordem de confiança:
 ## 15. Antes de abrir para outras pessoas
 
 - [ ] Marco 3: data do fim do beta (`fundador_ate`) e resposta do enigma definidas, `notificar-mensagem` publicada de novo e o job `peripatos-tarefas-diarias` ativo em `cron.job`. Passo a passo em `docs/conquistas.md`.
+- [ ] Abertura pública: `panateneia_inicio` e `panateneia_fim` definidas em `private.config` antes de a semana começar (`docs/conquistas.md`).
 - [ ] `/termos` e `/privacidade` revisados (hoje são rascunhos, marcados como tal) e o e-mail de contato trocado.
 - [ ] Chave de produção do Giphy pedida, se o uso passar do limite da de desenvolvimento.
 - [ ] Limites do passo 8 revistos para o tamanho esperado do lançamento.

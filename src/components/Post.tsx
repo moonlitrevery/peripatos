@@ -5,7 +5,9 @@ import { Gif } from "@/components/Gif";
 import type { ItemFeed } from "@/lib/feed";
 import { haQuantoTempo } from "@/lib/tempo";
 
-export function Post({ item, acoes }: { item: ItemFeed; acoes?: ReactNode }) {
+// `menu` é o botão de mais ações (os três pontos), no canto do cabeçalho;
+// `acoes` fica no rodapé.
+export function Post({ item, acoes, menu }: { item: ItemFeed; acoes?: ReactNode; menu?: ReactNode }) {
   return (
     <article className="cartao flex flex-col gap-3" aria-label={`Post de ${item.nome}`}>
       {item.origem === "descoberta" && (
@@ -13,7 +15,7 @@ export function Post({ item, acoes }: { item: ItemFeed; acoes?: ReactNode }) {
       )}
       <header className="flex items-center gap-3">
         <Avatar url={item.avatarUrl} preset={item.preset} semente={item.autorId} nome={item.nome} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <Link href={`/u/${item.username}`} className="font-display block truncate text-[1.0625rem] leading-tight font-bold">
             {item.origem === "proprio" ? "Você" : item.nome}
           </Link>
@@ -22,6 +24,7 @@ export function Post({ item, acoes }: { item: ItemFeed; acoes?: ReactNode }) {
             {item.editado && " · editado"}
           </p>
         </div>
+        {menu}
       </header>
       {item.corpo && <p className="break-words whitespace-pre-wrap">{item.corpo}</p>}
       {item.gifId && <Gif id={item.gifId} alt={item.gifAlt} />}
