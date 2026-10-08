@@ -3,7 +3,7 @@
 -- =============================================================================
 begin;
 \ir _helpers.psql
-select plan(104);
+select plan(102);
 
 select tests.seed_world();
 
@@ -393,17 +393,7 @@ select is((select count(*) from public.push_subscriptions), 0::bigint, 'ninguém
 select tests.login_mfa('adma');
 select is((select count(*) from public.push_subscriptions), 0::bigint, 'nem a staff');
 
--- ---------------------------------------------------------------------------
--- Excluir a conta apaga as mensagens
--- ---------------------------------------------------------------------------
-select tests.login('davi');
-select lives_ok($$ select public.excluir_conta('EXCLUIR') $$, 'davi exclui a conta');
-select tests.logout();
-select is(
-  (select count(*) from public.messages where body like 'msg %') + (select count(*) from public.conversations where id = tests.conv('ana', 'davi')),
-  0::bigint,
-  'as mensagens e a conversa dele foram apagadas'
-);
+-- (excluir conta, novo aceite dos termos e push pelo banco: 160_mensagens_ajustes.sql)
 
 select * from finish();
 rollback;

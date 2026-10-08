@@ -57,13 +57,13 @@ isOneToOne: false
                   ]
                 },"conversations": {
                   Row: {
-                    "created_at": string,"id": string,"institution_id": string,"last_message_at": string | null,"user_a": string,"user_b": string
+                    "created_at": string,"id": string,"institution_id": string,"last_message_at": string | null,"user_a": string | null,"user_b": string | null
                   }
                   Insert: {
-                    "created_at"?: string,"id"?: string,"institution_id": string,"last_message_at"?: string | null,"user_a": string,"user_b": string
+                    "created_at"?: string,"id"?: string,"institution_id": string,"last_message_at"?: string | null,"user_a"?: string | null,"user_b"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"institution_id"?: string,"last_message_at"?: string | null,"user_a"?: string,"user_b"?: string
+                    "created_at"?: string,"id"?: string,"institution_id"?: string,"last_message_at"?: string | null,"user_a"?: string | null,"user_b"?: string | null
                   }
                   Relationships: [
                     {
@@ -414,6 +414,9 @@ isOneToOne: false
             "abrir_conversa":
 { Args: { "p_outro": string }; Returns: string
                            },
+"aceitar_termos":
+{ Args: { "p_versao": string }; Returns: string
+                           },
 "afinidade":
 { Args: { "p_outro": string }; Returns: number
                            },
@@ -459,7 +462,7 @@ isOneToOne: false
                            },
 "minhas_conversas":
 { Args: Record<PropertyKey, never>; Returns: {
-              "aberta": boolean,"avatar_path": string,"avatar_preset": number,"conversa_id": string,"display_name": string,"nao_lidas": number,"outro_id": string,"previa": string,"previa_minha": boolean,"ultima_em": string,"username": string
+              "aberta": boolean,"avatar_path": string,"avatar_preset": number,"conversa_id": string,"display_name": string,"nao_lidas": number,"outro_excluido": boolean,"outro_id": string,"previa": string,"previa_minha": boolean,"ultima_em": string,"username": string
             }[]
                            },
 "minhas_denuncias":
@@ -476,6 +479,11 @@ isOneToOne: false
 "pessoas_parecidas":
 { Args: { "p_limite"?: number }; Returns: {
               "afinidade": number,"avatar_path": string,"avatar_preset": number,"bio": string,"display_name": string,"mutual": boolean,"tags_em_comum": Json,"user_id": string,"username": string
+            }[]
+                           },
+"preparar_notificacao":
+{ Args: { "p_mensagem": string }; Returns: {
+              "conversa": string,"destinatario": string,"remetente": string
             }[]
                            },
 "registrar_busca_gif":

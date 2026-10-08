@@ -8,6 +8,7 @@ import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 //   1. renova a sessão e regrava os cookies;
 //   2. sem login            -> /entrar
 //   3. sem onboarding       -> /onboarding
+//      termos desatualizados -> /aceite
 //   4. gera o nonce e a Content-Security-Policy desta resposta.
 // Isto é conforto de navegação. Quem protege os dados é o RLS: uma requisição
 // que escape daqui continua sem conseguir ler nada.
@@ -70,15 +71,21 @@ export async function proxy(request: NextRequest) {
   if (caminho === "/entrar") return redirecionar("/");
   if (ehPublica(caminho)) return comCsp(response);
 
-  const { data: perfil } = await supabase
-    .from("profiles")
-    .select("onboarding_completo")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Uma chamada só diz se o onboarding terminou e se a pessoa aceitou a
+  // versão vigente dos Termos.
+  const { data: status } = await supabase.rpc("conta_status");
+  const conta = status as { onboarding_completo?: boolean; termos_em_dia?: boolean } | null;
 
-  const completo = perfil?.onboarding_completo === true;
+  const completo = conta?.onboarding_completo === true;
   if (!completo && caminho !== "/onboarding") return redirecionar("/onboarding");
   if (completo && caminho === "/onboarding") return redirecionar("/");
+
+  // Os Termos mudaram desde o último aceite: antes de qualquer outra tela, a
+  // pessoa vê o que mudou e decide. Isto é navegação; quem impede de postar
+  // ou mandar mensagem sem o aceite é o banco.
+  const emDia = conta?.termos_em_dia === true;
+  if (completo && !emDia && caminho !== "/aceite") return redirecionar("/aceite");
+  if (completo && emDia && caminho === "/aceite") return redirecionar("/");
 
   return comCsp(response);
 }

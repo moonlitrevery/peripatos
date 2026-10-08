@@ -87,7 +87,7 @@ export default function Termos() {
 
       <h2>Mudanças e contato</h2>
       <p>
-        Estes termos podem mudar; avisaremos dentro do app antes de mudanças importantes.
+        Estes termos podem mudar; quando mudarem, o app mostra o que mudou e pede um novo aceite antes de você continuar.
         Responsável pelo Peripatos: <strong>[NOME DO RESPONSÁVEL, a definir]</strong>. Dúvidas:{" "}
         <strong>contato@EXEMPLO.com.br</strong> (endereço provisório, a definir).
       </p>

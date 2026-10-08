@@ -259,7 +259,9 @@ for (const b of BUCKETS) {
 titulo("6. Edge Functions");
 for (const funcao of ["processar-avatar", "notificar-mensagem"]) {
   const r = await pedir(`/functions/v1/${funcao}`, { method: "POST", body: "{}" });
-  if (r.status === 401) ok(`${funcao}: recusa quem não está logado (401)`);
+  // processar-avatar exige o token do usuário; notificar-mensagem exige o
+  // segredo do banco. Sem um nem outro, as duas respondem 401.
+  if (r.status === 401) ok(`${funcao}: recusa quem chega sem credencial (401)`);
   else if (r.status === 404) falha(`${funcao}: não está publicada (404): rode \`supabase functions deploy ${funcao}\``);
   else falha(`${funcao}: sem login respondeu: ${resumo(r)}`);
 }

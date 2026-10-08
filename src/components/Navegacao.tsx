@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { contarNaoLidas } from "@/app/acoes/mensagens";
 import { useAoLer, useEventosDeMensagem } from "@/lib/tempo-real";
 
@@ -30,9 +30,21 @@ export function Navegacao({ uid, naoLidasIniciais }: { uid: string; naoLidasInic
   const caminho = usePathname();
   const [naoLidas, setNaoLidas] = useState(naoLidasIniciais);
 
+  // Vários motivos para recontar chegam quase juntos (um evento, uma leitura,
+  // uma troca de tela). Junta tudo numa consulta só.
+  const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recontar = useCallback(() => {
-    void contarNaoLidas().then(setNaoLidas);
+    if (espera.current) clearTimeout(espera.current);
+    espera.current = setTimeout(() => {
+      void contarNaoLidas().then(setNaoLidas);
+    }, 250);
   }, []);
+  useEffect(
+    () => () => {
+      if (espera.current) clearTimeout(espera.current);
+    },
+    [],
+  );
   // chegou ou sumiu uma mensagem
   useEventosDeMensagem(uid, recontar);
   // esta aba acabou de marcar uma conversa como lida

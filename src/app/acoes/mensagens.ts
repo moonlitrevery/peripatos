@@ -2,10 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
 import { z } from "zod";
 import { falha, mensagemDeErro, ok, type Resultado } from "@/lib/erros";
-import { ultimasMensagens, umaMensagem, type Mensagem } from "@/lib/mensagens";
+import { ultimasMensagens, type Mensagem } from "@/lib/mensagens";
 import { createClient } from "@/lib/supabase/server";
 import * as v from "@/lib/validacao";
 
@@ -61,25 +60,8 @@ export async function enviarMensagem(conversaBruta: unknown, corpoBruto: unknown
     return falha(mensagemDeErro(error, "Não foi possível enviar."));
   }
 
-  // A notificação push sai depois da resposta, para não atrasar o envio. A
-  // função confere, com este mesmo token, que a mensagem é de quem chamou, e
-  // nunca põe o conteúdo na notificação. Se falhar, a mensagem já foi entregue.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession(); // só para repassar o token; a função o valida
-  const token = session?.access_token;
-  if (token) {
-    after(async () => {
-      try {
-        await supabase.functions.invoke("notificar-mensagem", {
-          body: { mensagemId: data.id },
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } catch {
-        // sem notificação desta vez
-      }
-    });
-  }
+  // A notificação push não é disparada daqui: o banco a pede sozinho a cada
+  // mensagem gravada (trigger), venha ela do app ou de uma chamada à API.
 
   return ok({
     id: data.id,
@@ -115,13 +97,21 @@ export async function marcarLida(conversaBruta: unknown): Promise<Resultado> {
   return ok(undefined);
 }
 
-/** Uma mensagem pelo id, quando o tempo real avisa que ela chegou. */
-export async function buscarMensagem(idBruto: unknown): Promise<Resultado<Mensagem | null>> {
+/**
+ * Uma mensagem pelo id, quando o tempo real avisa que ela chegou numa conversa
+ * que está aberta na tela. Se for da outra pessoa, já marca a conversa como
+ * lida na mesma chamada: quem sai da tela logo em seguida não fica com uma
+ * "não lida" que acabou de ver.
+ */
+export async function receberMensagem(idBruto: unknown): Promise<Resultado<Mensagem | null>> {
   const id = v.validar(v.uuid, idBruto);
   if (!id.ok) return id.falha;
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
-  return ok(await umaMensagem(supabase, id.dado, user.id));
+  const { data } = await supabase.from("messages").select("id, sender_id, body, gif_id, gif_alt, created_at, conversation_id").eq("id", id.dado).maybeSingle();
+  if (!data) return ok(null);
+  if (data.sender_id !== user.id) await supabase.rpc("marcar_conversa_lida", { p_conversa: data.conversation_id });
+  return ok({ id: data.id, minha: data.sender_id === user.id, corpo: data.body, gifId: data.gif_id, gifAlt: data.gif_alt, criadaEm: data.created_at });
 }
 
 const Anteriores = z.object({ conversaId: v.uuid, antesDe: z.iso.datetime({ offset: true }) });

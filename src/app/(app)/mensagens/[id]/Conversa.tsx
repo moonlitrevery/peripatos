@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { apagarMensagem, buscarMensagem, enviarMensagem, marcarLida, mensagensAnteriores } from "@/app/acoes/mensagens";
+import { apagarMensagem, enviarMensagem, marcarLida, mensagensAnteriores, receberMensagem } from "@/app/acoes/mensagens";
 import { Denunciar } from "@/components/Denunciar";
 import { Gif, urlDoGif } from "@/components/Gif";
 import { SeletorDeGif } from "@/components/SeletorDeGif";
@@ -21,11 +21,13 @@ type Props = {
   haMaisInicial: boolean;
   /** Aceita mensagens novas: os dois se seguem e não há bloqueio. */
   aberta: boolean;
+  /** A outra pessoa excluiu a conta (as mensagens dela foram apagadas). */
+  outroExcluido: boolean;
 };
 
 // Não existe "visto" nem "digitando", de propósito: nada aqui avisa a outra
 // pessoa de que você abriu a conversa ou começou a escrever.
-export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial, aberta }: Props) {
+export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial, aberta, outroExcluido }: Props) {
   const router = useRouter();
   const [mensagens, setMensagens] = useState(iniciais);
   const [haMais, setHaMais] = useState(haMaisInicial);
@@ -37,7 +39,11 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
   const [carregando, setCarregando] = useState(false);
   const fim = useRef<HTMLDivElement>(null);
 
+  // ids que esta tela já tem ou já está buscando, para não pedir duas vezes
+  const conhecidas = useRef(new Set(iniciais.map((m) => m.id)));
+
   const acrescentar = useCallback((nova: Mensagem) => {
+    conhecidas.current.add(nova.id);
     setMensagens((atual) => (atual.some((m) => m.id === nova.id) ? atual : [...atual, nova]));
   }, []);
 
@@ -63,10 +69,14 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
       }
       // O aviso só traz o id. O conteúdo vem pela API, onde o banco decide de
       // novo se esta pessoa pode ler.
-      void buscarMensagem(e.mensagem).then((r) => {
+      // A minha própria mensagem já entrou na tela pelo retorno do envio.
+      if (conhecidas.current.has(e.mensagem)) return;
+      conhecidas.current.add(e.mensagem);
+      void receberMensagem(e.mensagem).then((r) => {
         if (!r.ok || !r.dados) return;
         acrescentar(r.dados);
-        if (!r.dados.minha) void marcarLida(conversaId).then(avisarLeitura);
+        // a mesma chamada já marcou como lida, se era da outra pessoa
+        if (!r.dados.minha) avisarLeitura();
       });
     },
     [conversaId, acrescentar],
@@ -116,7 +126,7 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
       )}
 
       {mensagens.length === 0 ? (
-        <p className="text-tinta-2">Nenhuma mensagem ainda. Diga oi.</p>
+        <p className="text-tinta-2">{outroExcluido ? "Não sobrou nenhuma mensagem nesta conversa." : "Nenhuma mensagem ainda. Diga oi."}</p>
       ) : (
         <ol className="flex flex-col gap-3" aria-label={`Mensagens com ${nomeDoOutro}`}>
           {mensagens.map((m) => (
@@ -216,10 +226,17 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
           <h2 id="conversa-fechada" className="text-lg font-bold">
             Conversa fechada
           </h2>
-          <p className="text-tinta-2">
-            Vocês não se seguem mais, então não dá para enviar mensagens novas. O que já foi dito continua aqui para os
-            dois. Se voltarem a se seguir, a conversa reabre.
-          </p>
+          {outroExcluido ? (
+            <p className="text-tinta-2">
+              Esta pessoa excluiu a conta. As mensagens que ela escreveu foram apagadas; as suas continuam aqui, e você
+              pode apagá-las quando quiser.
+            </p>
+          ) : (
+            <p className="text-tinta-2">
+              Vocês não se seguem mais, então não dá para enviar mensagens novas. O que já foi dito continua aqui para
+              os dois. Se voltarem a se seguir, a conversa reabre.
+            </p>
+          )}
         </section>
       )}
 

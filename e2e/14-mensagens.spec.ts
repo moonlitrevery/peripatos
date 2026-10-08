@@ -98,6 +98,16 @@ test.describe("Mensagens entre dois navegadores", () => {
   });
 
   test("contador de não lidas só para quem recebeu, e some ao abrir", async () => {
+    // O Cauê estava com a conversa aberta: o que chegou é marcado como lido
+    // na mesma chamada que busca a mensagem. Espera essa gravação.
+    const idCaue = await idDe("caue");
+    await expect
+      .poll(async () => {
+        const { data: ultima } = await admin().from("messages").select("created_at").eq("conversation_id", conversa).order("created_at", { ascending: false }).limit(1).single();
+        const { data: lido } = await admin().from("conversation_reads").select("last_read_at").eq("conversation_id", conversa).eq("user_id", idCaue).single();
+        return new Date(lido!.last_read_at) >= new Date(ultima!.created_at);
+      })
+      .toBe(true);
     await caue.goto("/");
     await expect(caue.getByTestId("nao-lidas")).toHaveCount(0);
 
@@ -428,7 +438,7 @@ function decifrar(corpo: Buffer, aparelho: ECDH, auth: Buffer): string {
   return claro.subarray(0, fim).toString("utf8"); // tira o delimitador 0x02
 }
 
-test("notificação push diz só de quem é a mensagem, nunca o conteúdo", async ({ browser }) => {
+test("notificação push: o banco pede a cada mensagem, e ela diz só de quem é, nunca o conteúdo", async ({ browser }) => {
   test.setTimeout(120_000);
   await tornarMutuos("lia", "caue");
   const caueId = await idDe("caue");
@@ -496,18 +506,16 @@ require("http").createServer((req, res) => {
     });
     expect(fora.error?.message).toBe("Endereço de notificação não reconhecido.");
 
-    // A Lia manda uma mensagem pelo app.
+    // 1) A Lia manda uma mensagem DIRETO PELA API, sem o app no caminho. Quem
+    //    pede a notificação é o banco, então ela sai do mesmo jeito.
     const SEGREDO = "isto é particular: senha 4815162342";
-    const daLia = await contextoDe(browser, "lia");
-    const page = await daLia.newPage();
-    await page.goto("/u/caue");
-    await page.getByRole("button", { name: "Mensagem", exact: true }).click();
-    await expect(page).toHaveURL(/\/mensagens\/[0-9a-f-]{36}$/);
-    const conversa = new URL(page.url()).pathname.split("/").pop()!;
-    await enviar(page, "Cauê", SEGREDO);
+    const lia = await clientePorApi(emailDe("lia"));
+    const conversa = (await lia.rpc("abrir_conversa", { p_outro: caueId })).data as string;
+    const pelaApi = await lia.from("messages").insert({ conversation_id: conversa, body: SEGREDO }).select("id").single();
+    expect(pelaApi.error).toBeNull();
 
     await expect
-      .poll(async () => (await lerRecebidos()).length, { timeout: 30_000, message: "a Edge Function não entregou a notificação" })
+      .poll(async () => (await lerRecebidos()).length, { timeout: 30_000, message: "o banco não pediu ou a função não entregou a notificação" })
       .toBe(1);
     const { cabecalhos, corpo } = (await lerRecebidos())[0]!;
     expect(cabecalhos["content-encoding"]).toBe("aes128gcm");
@@ -520,16 +528,36 @@ require("http").createServer((req, res) => {
     expect(JSON.stringify(carga)).not.toContain("particular");
     expect(JSON.stringify(carga)).not.toContain("4815162342");
 
-    // Chamar a função de novo não manda outra; e quem não enviou não dispara nada.
-    const { data: msg } = await admin().from("messages").select("id").eq("body", SEGREDO).single();
-    const lia = await clientePorApi(emailDe("lia"));
-    const repetida = await lia.functions.invoke("notificar-mensagem", { body: { mensagemId: msg!.id } });
-    expect(repetida.data).toEqual({ enviadas: 0, motivo: "já notificada" });
-    const tomas = await clientePorApi(emailDe("tomas"));
-    const alheia = await tomas.functions.invoke("notificar-mensagem", { body: { mensagemId: msg!.id } });
-    expect(alheia.error).not.toBeNull();
+    // 2) E pelo app também, uma notificação por mensagem.
+    const daLia = await contextoDe(browser, "lia");
+    const page = await daLia.newPage();
+    await page.goto(`/mensagens/${conversa}`);
+    await enviar(page, "Cauê", "segunda mensagem, agora pelo app");
+    await expect.poll(async () => (await lerRecebidos()).length, { timeout: 30_000 }).toBe(2);
+    const segunda = JSON.parse(decifrar((await lerRecebidos())[1]!.corpo, aparelho, auth));
+    expect(segunda).toEqual(carga);
+
+    // 3) A função só obedece ao banco. Um usuário logado, mesmo sendo quem
+    //    enviou, não consegue dispará-la...
+    const semSegredo = await lia.functions.invoke("notificar-mensagem", { body: { mensagemId: pelaApi.data!.id } });
+    expect(semSegredo.error).not.toBeNull();
+    const direto = await fetch(`${process.env.E2E_SUPABASE_URL}/functions/v1/notificar-mensagem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-peripatos-segredo": "chute-de-quem-nao-sabe" },
+      body: JSON.stringify({ mensagemId: pelaApi.data!.id }),
+    });
+    expect(direto.status).toBe(401);
+    // ...nem ler o que o banco prepara para ela.
+    expect((await lia.rpc("preparar_notificacao", { p_mensagem: pelaApi.data!.id })).error).not.toBeNull();
+    // E pedir de novo, com o segredo certo (o local, conhecido), não notifica duas vezes.
+    const repetido = await fetch(`${process.env.E2E_SUPABASE_URL}/functions/v1/notificar-mensagem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-peripatos-segredo": "segredo-so-do-ambiente-local" },
+      body: JSON.stringify({ mensagemId: pelaApi.data!.id }),
+    });
+    expect(await repetido.json()).toEqual({ enviadas: 0, motivo: "nada a notificar" });
     await esperar(1500);
-    expect((await lerRecebidos()).length).toBe(1);
+    expect((await lerRecebidos()).length).toBe(2);
 
     await daLia.close();
   } finally {

@@ -8,6 +8,8 @@ import { AtualizarAoReceber } from "./AtualizarAoReceber";
 
 export const metadata: Metadata = { title: "Mensagens" };
 
+const CONTA_EXCLUIDA = "Conta excluída";
+
 export default async function Mensagens() {
   const { supabase, user } = await exigirSessao();
   // A lista, a prévia e o contador de não lidas vêm do banco, que só devolve
@@ -43,12 +45,12 @@ export default async function Mensagens() {
                 <Avatar
                   url={c.avatar_path ? urls.get(c.avatar_path) : null}
                   preset={c.avatar_preset}
-                  semente={c.outro_id}
+                  semente={c.outro_id ?? c.conversa_id}
                   nome={c.display_name}
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">
-                    <span className="font-display truncate text-[1.0625rem] font-bold">{c.display_name}</span>
+                    <span className="font-display truncate text-[1.0625rem] font-bold">{c.outro_excluido ? CONTA_EXCLUIDA : c.display_name}</span>
                     <time dateTime={c.ultima_em} className="fino shrink-0">
                       {haQuantoTempo(c.ultima_em)}
                     </time>
@@ -56,7 +58,11 @@ export default async function Mensagens() {
                   <span className={`block truncate text-sm ${c.nao_lidas > 0 ? "text-tinta font-semibold" : "text-tinta-2"}`}>
                     {c.previa === null ? "Nenhuma mensagem ainda" : `${c.previa_minha ? "Você: " : ""}${c.previa}`}
                   </span>
-                  {!c.aberta && <span className="fino block">Conversa fechada: vocês não se seguem mais</span>}
+                  {c.outro_excluido ? (
+                    <span className="fino block">Esta pessoa excluiu a conta</span>
+                  ) : (
+                    !c.aberta && <span className="fino block">Conversa fechada: vocês não se seguem mais</span>
+                  )}
                 </span>
                 {c.nao_lidas > 0 && (
                   <span className="bg-petroleo text-sobre-petroleo min-w-6 shrink-0 rounded-full px-2 py-0.5 text-center text-[0.75rem] font-bold">

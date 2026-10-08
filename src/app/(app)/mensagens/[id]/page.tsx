@@ -21,6 +21,10 @@ export default async function PaginaDaConversa({ params }: PageProps<"/mensagens
   const conversa = (lista ?? []).find((c) => c.conversa_id === id);
   if (!conversa) notFound();
 
+  // A outra pessoa pode ter excluído a conta: as mensagens dela foram
+  // apagadas, e as de quem ficou continuam aqui.
+  const nome = conversa.outro_excluido ? "Conta excluída" : (conversa.display_name ?? "");
+
   const [pagina, urls] = await Promise.all([
     ultimasMensagens(supabase, id, user.id),
     assinarAvatares(supabase, [conversa.avatar_path]),
@@ -36,14 +40,16 @@ export default async function PaginaDaConversa({ params }: PageProps<"/mensagens
           <Avatar
             url={conversa.avatar_path ? urls.get(conversa.avatar_path) : null}
             preset={conversa.avatar_preset}
-            semente={conversa.outro_id}
+            semente={conversa.outro_id ?? conversa.conversa_id}
             nome={conversa.display_name}
           />
           <div className="min-w-0">
-            <h1 className="text-2xl leading-tight font-bold break-words">{conversa.display_name}</h1>
-            <Link href={`/u/${conversa.username}`} className="fino underline underline-offset-4">
-              @{conversa.username}
-            </Link>
+            <h1 className="text-2xl leading-tight font-bold break-words">{nome}</h1>
+            {conversa.username && (
+              <Link href={`/u/${conversa.username}`} className="fino underline underline-offset-4">
+                @{conversa.username}
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -51,7 +57,8 @@ export default async function PaginaDaConversa({ params }: PageProps<"/mensagens
       <Conversa
         conversaId={id}
         uid={user.id}
-        nomeDoOutro={conversa.display_name}
+        nomeDoOutro={nome}
+        outroExcluido={conversa.outro_excluido}
         iniciais={pagina.mensagens}
         haMaisInicial={pagina.haMais}
         aberta={conversa.aberta}

@@ -71,15 +71,16 @@ Se `http://127.0.0.1:54321` não responder depois do `supabase start` (acontece 
 - **Sem confirmação de leitura e sem "digitando".** É decisão de produto: o público é de gente com dificuldade social, e "visto e não respondeu" afasta. O marcador de leitura de cada pessoa (`conversation_reads`) só é legível por ela, e serve só para o contador de não lidas na aba Mensagens.
 - **A staff não lê conversas.** Nenhuma política das tabelas de mensagens cita cargo (há um teste que falha se alguma citar). Denunciar uma mensagem grava uma **cópia** dela na denúncia, feita pelo banco, e é só essa cópia que a moderação vê.
 - **Limites:** 30 mensagens por minuto e 1000 por dia por pessoa, no mesmo mecanismo dos posts.
-- **Excluir a conta** apaga as conversas da pessoa inteiras, com as mensagens dos dois lados.
+- **Excluir a conta** apaga só as mensagens de quem saiu. As da outra pessoa ficam, numa conversa que passa a aparecer para ela como sendo com uma "Conta excluída", fechada. Se as duas saírem, a conversa some. A cópia de uma mensagem numa denúncia continua como está.
 
 **Tempo real.** Cada pessoa assina **um canal privado, o dela** (`usuario:<uid>`), e a única política em `realtime.messages` só autoriza o próprio canal. Não existe canal por conversa: a autorização do Realtime é conferida quando o cliente entra, então quem já estivesse dentro de um canal de conversa continuaria recebendo depois de um bloqueio. Aqui é o banco que escolhe os destinatários a cada evento, com o estado daquele instante, e **o evento leva só identificadores, nunca o texto**: quem recebe busca a mensagem pela API, onde o RLS decide de novo.
 
-**Notificações push.** A inscrição do aparelho fica em `push_subscriptions` (só a própria pessoa lê). A Edge Function `notificar-mensagem` é chamada depois do envio, com o token de quem enviou, e monta a notificação a partir do banco: **"Nova mensagem de <nome>" e mais nada**. Ela nem lê o corpo da mensagem. O banco só aceita endereço de serviço de push de navegador (`private.push_hosts`), para a função não virar ponte para outros endereços. No iPhone só funciona com o app instalado na tela de início.
+**Notificações push.** A inscrição do aparelho fica em `push_subscriptions` (só a própria pessoa lê). **Quem pede a notificação é o banco**: um trigger em `messages` chama a Edge Function `notificar-mensagem` a cada mensagem gravada (pela extensão `pg_net`, depois do commit), venha ela do app ou de uma chamada direta à API. O pedido leva só o id da mensagem e um segredo que prova que veio do banco; a função não aceita chamada de usuário. O que entra na notificação sai de `preparar_notificacao`, que só a função executa e que **não devolve o texto**: "Nova mensagem de <nome>" e mais nada. O banco só aceita endereço de serviço de push de navegador (`private.push_hosts`), para a função não virar ponte para outros endereços. No iPhone só funciona com o app instalado na tela de início.
 
 ### Consentimentos
 
 - **Termos e Política.** No onboarding a pessoa marca o aceite, e o banco grava a versão aceita e a data (`private.accounts.termos_versao`, `termos_aceitos_em`). A versão vigente mora no banco (`private.termos_versao_atual()`) e em `src/lib/legal.ts`; o banco só aceita o aceite da versão vigente.
+- **Novo aceite.** Quando a versão vigente é diferente da última aceita, o proxy leva a pessoa para `/aceite`, que mostra o que mudou (`MUDANCAS_DA_VERSAO` em `src/lib/legal.ts`). Aceitar libera o app; recusar oferece sair ou excluir a conta. **No banco**, sem o aceite da versão vigente a pessoa não posta nem manda mensagem (políticas restritivas em `posts` e `messages`); ler continua funcionando.
 - **Tags sensíveis (LGPD, art. 11).** Consentimento específico, pedido à parte, com a finalidade escrita. Sem consentimento registrado **o banco recusa** gravar tag sensível, por qualquer caminho. Em Configurações a pessoa revoga: as tags e o registro do consentimento são apagados na mesma transação.
 
 ### Segurança da interface
@@ -344,6 +345,7 @@ No GitHub, o workflow `.github/workflows/ci.yml` roda tudo isso a cada push, num
 | `110_storage` | Pasta por uid, bucket de entrada, ninguém escreve em `avatars`, pendente invisível, aprovado visível |
 | `120_privacidade` | Despeja tudo o que usuário, moderador e admin conseguem ler e procura e-mails, domínios, RAs e colunas da conta privada |
 | `130_excluir_conta` | A exclusão apaga tudo da pessoa e mantém só o HMAC de banimento e a auditoria |
+| `160_mensagens_ajustes` | O banco pede a notificação a cada mensagem, só com o id; `preparar_notificacao` só para a service role, sem o texto, uma vez por mensagem e só com a conversa aberta. Sem o aceite da versão vigente não posta nem manda mensagem, e só se aceita a versão vigente. Excluir a conta apaga só as mensagens de quem saiu; a cópia na denúncia fica; quando os dois saem a conversa some |
 | `150_mensagens` | Quem abre conversa; envio, leitura e limites; terceiros e **staff não leem nem escrevem**; sem "visto" (marcador de leitura invisível para o outro); eventos de tempo real só para os dois, em canal privado e sem o texto; apagar; fechar ao deixar de ser mútuo e reabrir; denúncia com cópia que não pode ser forjada; bloqueio esconde tudo; rate limit; inscrição de push só em serviço conhecido; excluir conta apaga as mensagens |
 | `140_auditoria` | Staff sem `aal2` não age nem lê (e `aal2` em metadata não conta); consentimento de tags sensíveis e revogação; aceite dos termos só da versão vigente; `ra` e `birth_date` não existem mais; mesmo RA com outro nome é recusado; limite de buscas de GIF; texto alternativo do GIF |
 
@@ -365,13 +367,14 @@ Roda num celular (Pixel 7) contra o Supabase local, com um build de produção d
 | `04-seguir-e-tag-sensivel` | Em Gente, a contagem bate com os chips em âmbar; seguir de volta vira mútuo, e só então a tag sensível aparece |
 | `05-bloqueio` | Perfil e posts somem do feed, de Gente e do endereço direto, nos dois sentidos |
 | `06-moderacao` | Usuário comum é redirecionado de `/moderacao`; moderadora entra |
-| `07-excluir-conta` | A conta some do Auth, e o perfil e os posts somem para os outros |
+| `07-excluir-conta` | A conta some do Auth, e o perfil e os posts somem para os outros. Numa conversa, as mensagens de quem saiu são apagadas e as da outra pessoa ficam, com a conversa aparecendo como "Conta excluída" |
 | `08-avatar-sem-exif` | Falando direto com a API (sem o redimensionamento do navegador): a função tira o EXIF, apaga o original e deixa a foto pendente |
 | `10-cabecalhos` | CSP (nonce novo a cada resposta, sem `unsafe-inline`, só Supabase e Giphy liberados), `frame-ancestors`, HSTS e `Referrer-Policy` em páginas públicas, logadas, redirecionamentos, API e estáticos |
 | `11-mfa` | Staff sem segundo fator não lê fila nem age, nem pela API; cadastra o autenticador, erra o código, acerta e entra; num login novo o código é pedido de novo |
 | `12-acessibilidade` | axe-core (WCAG 2.1 A e AA) em todas as telas e diálogos, nos temas claro e escuro: zero violações sérias ou críticas, e nenhuma violação da CSP |
 | `13-seguranca` | Nenhum filtro em texto nem HTML cru no código; username malicioso não acha ninguém; limite da busca de GIF; "sair de todos os dispositivos" derruba o outro aparelho |
 | `14-mensagens` | **Dois navegadores:** conversa em tempo real sem recarregar; só http/https viram link; contador de não lidas só para quem recebeu; apagar some para os dois; denúncia leva só a cópia e a staff não acessa a conversa; axe nos dois temas; deixar de seguir fecha e voltar reabre; bloqueio esconde. **Realtime direto, sem o app:** os dois participantes recebem (controle) e terceiro, bloqueada e não mútuo são recusados nos canais privados e não recebem nada em nenhum canal. **Push:** a notificação, decifrada, contém só "Nova mensagem de <nome>" |
+| `15-aceite` | Termos desatualizados: toda tela leva a `/aceite`, que mostra o que mudou; o banco recusa post pela API; recusar oferece sair ou excluir; depois de aceitar, volta ao app e publica. axe nos dois temas |
 | `09-service-worker` | Com o service worker ativo e controlando a página, depois de logar e navegar: a Cache Storage tem só a página offline e os ícones, nada do Supabase nem de rota autenticada; sem rede, entrega a página offline e não uma cópia do Início |
 
 Os testes usam a service role local para conferir, por fora do app, que uma conta ou um arquivo deixou de existir. Ela é lida de `supabase status` na hora e não fica em nenhum arquivo.

@@ -41,8 +41,3 @@ export async function ultimasMensagens(supabase: SupabaseClient<Database>, conve
     erro: null,
   };
 }
-
-export async function umaMensagem(supabase: SupabaseClient<Database>, id: string, uid: string): Promise<Mensagem | null> {
-  const { data } = await supabase.from("messages").select(COLUNAS).eq("id", id).maybeSingle();
-  return data ? deLinha(data, uid) : null;
-}

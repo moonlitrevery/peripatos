@@ -98,6 +98,10 @@ export default function Privacidade() {
         <li>Se vocês deixarem de se seguir, a conversa continua legível para os dois, mas não aceita mensagens novas.</li>
         <li>Se um bloquear o outro, a conversa deixa de aparecer para os dois.</li>
         <li>
+          Se a outra pessoa excluir a conta, as mensagens dela são apagadas. As suas continuam com você, e você pode
+          apagá-las quando quiser.
+        </li>
+        <li>
           As mensagens não têm criptografia de ponta a ponta: ficam guardadas no nosso banco de dados, protegidas
           pelas regras de acesso acima.
         </li>
@@ -200,7 +204,9 @@ export default function Privacidade() {
         </li>
         <li>
           <strong>Exclusão.</strong> Em Configurações, &ldquo;Excluir minha conta&rdquo; apaga de vez seu perfil, posts,
-          gostos, seguidores, bloqueios, foto, suas conversas (com as mensagens dos dois lados) e seu login.
+          gostos, seguidores, bloqueios, foto, as mensagens que você escreveu e seu login. As mensagens que a outra
+          pessoa escreveu continuam com ela, numa conversa que passa a aparecer como sendo com uma &ldquo;conta
+          excluída&rdquo;.
         </li>
         <li>
           <strong>Reclamar.</strong> Se achar que seus dados foram tratados de forma errada, fale com o encarregado.
@@ -239,7 +245,8 @@ export default function Privacidade() {
 
       <h2>Mudanças</h2>
       <p>
-        Se esta política mudar de forma relevante, avisaremos dentro do app antes de a mudança valer.
+        Se esta política ou os Termos mudarem, na próxima vez que você entrar o app mostra o que mudou e pede um novo
+        aceite. Sem ele não dá para continuar usando; você pode sair ou excluir a conta.
       </p>
     </PaginaLegal>
   );

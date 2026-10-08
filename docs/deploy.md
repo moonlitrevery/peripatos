@@ -211,12 +211,31 @@ As notificações usam um par de chaves (VAPID). A pública vai para o navegador
   node scripts/gerar-vapid.mjs --mostrar
   ```
 
+- [ ] **[comando]** Gere o segredo com que o banco se identifica para a função. Guarde no gerenciador de senhas:
+
+  ```bash
+  openssl rand -hex 32
+  ```
+
 - [ ] **[comando]** Cadastre no Supabase e publique a função:
 
   ```bash
-  pnpm exec supabase secrets set VAPID_PUBLIC_KEY=<pública> VAPID_PRIVATE_KEY=<privada> VAPID_SUBJECT=mailto:<seu e-mail de contato>
+  pnpm exec supabase secrets set VAPID_PUBLIC_KEY=<pública> VAPID_PRIVATE_KEY=<privada> VAPID_SUBJECT=mailto:<seu e-mail de contato> SEGREDO_DO_BANCO=<segredo>
   pnpm exec supabase functions deploy notificar-mensagem
   ```
+
+  Esta função sobe com `verify_jwt = false` (vem do `config.toml`), de propósito: quem a chama é o banco, não um usuário, e ela confere o segredo. Sem o segredo certo responde 401.
+
+- [ ] **[painel]** *SQL Editor*: diga ao banco onde a função está e qual é o segredo. São os dois valores que o trigger de mensagens usa; **sem eles nenhuma notificação é pedida** (as mensagens funcionam normalmente).
+
+  ```sql
+  select vault.create_secret('https://<ref>.supabase.co/functions/v1/notificar-mensagem', 'peripatos_push_url');
+  select vault.create_secret('<segredo>', 'peripatos_push_segredo');
+  -- conferir, sem mostrar os valores:
+  select name, created_at from vault.secrets where name like 'peripatos_push_%';
+  ```
+
+- [ ] **[painel]** *Database → Extensions*: `pg_net` aparece ligada (a migration 15 a cria). É ela que faz a chamada do banco para a função.
 
 - [ ] **[painel, Vercel]** `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = a chave **pública** (passo 10), e *Redeploy*.
 - [ ] Guarde a chave privada no gerenciador de senhas. **Trocar o par desliga as notificações de todo mundo**: cada pessoa teria que ativar de novo.
@@ -227,6 +246,8 @@ O que saber:
 - **iPhone e iPad:** só funciona com o Peripatos **instalado na tela de início** (Safari → Compartilhar → Adicionar à Tela de Início), a partir do iOS 16.4. No Safari comum a opção nem aparece; a tela de Configurações explica isso para a pessoa.
 - A função só entrega para os serviços de push dos navegadores (lista em `private.push_hosts`). Se um navegador novo usar outro endereço, a inscrição é recusada com "Endereço de notificação não reconhecido": acrescente o padrão numa migration.
 - Sem as chaves, o app funciona normalmente e a seção de Notificações diz que elas não estão configuradas.
+- Para conferir que o banco está pedindo: `select id, status_code, error_msg, created from net._http_response order by created desc limit 5;` no *SQL Editor*. `200` é a função respondendo; `401` é segredo diferente entre o Vault e a função.
+- Os dois segredos do Vault **não entram no backup** (`docs/backup.md` leva só o do HMAC). Depois de restaurar num projeto novo, refaça este passo.
 
 ## 10. Vercel — [painel]
 
@@ -337,7 +358,7 @@ O que fazer, em ordem de confiança:
 | Mudou | Faça |
 | --- | --- |
 | Uma migration nova | **[comando]** backup (`scripts/backup-criptografado.sh`), `pnpm exec supabase db push --dry-run`, depois `db push`, depois `pnpm verificar:deploy` |
-| Os Termos ou a Política | Nova versão em `src/lib/legal.ts` **e** numa migration que troca `private.termos_versao_atual()`, na mesma entrega |
+| Os Termos ou a Política | Nova versão em `src/lib/legal.ts` (com a lista `MUDANCAS_DA_VERSAO` reescrita) **e** numa migration que troca `private.termos_versao_atual()`, na mesma entrega. A partir do `db push`, quem aceitou a versão anterior vê a tela de novo aceite e **não posta nem manda mensagem até aceitar**: faça o `db push` logo depois de o deploy do app terminar, nunca antes |
 | A Edge Function | **[comando]** `pnpm exec supabase functions deploy processar-avatar` |
 | O app | merge em `main`; o Vercel faz o deploy |
 | App **e** migration na mesma entrega | merge em `main`, depois `git checkout main && git pull`, e só então o `db push`. Entre os dois há uma janela em que app e banco não combinam: faça em horário de pouco uso |

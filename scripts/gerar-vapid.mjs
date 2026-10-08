@@ -59,6 +59,16 @@ const publicaDoApp = valorDe(app, "NEXT_PUBLIC_VAPID_PUBLIC_KEY");
 const publicaDaFuncao = valorDe(funcoes, "VAPID_PUBLIC_KEY");
 const privadaDaFuncao = valorDe(funcoes, "VAPID_PRIVATE_KEY");
 
+// O segredo com que o banco LOCAL se identifica para a função. É fixo e
+// conhecido de propósito: é o mesmo que supabase/seed.sql põe no Vault local.
+// Em produção o valor é aleatório e nunca passa por aqui (docs/deploy.md).
+const SEGREDO_LOCAL = "segredo-so-do-ambiente-local";
+if (valorDe(funcoes, "SEGREDO_DO_BANCO") !== SEGREDO_LOCAL) {
+  funcoes = definir(funcoes, "SEGREDO_DO_BANCO", SEGREDO_LOCAL);
+  writeFileSync(envFuncoes, funcoes, { mode: 0o600 });
+  console.log("Segredo local do banco gravado em supabase/functions/.env.");
+}
+
 if (publicaDoApp && publicaDoApp === publicaDaFuncao && privadaDaFuncao) {
   console.log("As chaves VAPID locais já existem e combinam. Nada a fazer.");
   process.exit(0);

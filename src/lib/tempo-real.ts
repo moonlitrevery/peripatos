@@ -22,13 +22,28 @@ type Ouvinte = (e: Evento) => void;
 // navegação e a conversa aberta ouvem o mesmo canal).
 let canal: RealtimeChannel | null = null;
 let dono: string | null = null;
+let conectando: Promise<void> | null = null;
 const ouvintes = new Set<Ouvinte>();
 
-async function conectar(uid: string) {
-  if (canal && dono === uid) return;
-  const supabase = createClient();
-  if (canal) await supabase.removeChannel(canal);
+// A navegação e a conversa aberta pedem a conexão quase ao mesmo tempo. Sem
+// esta guarda as duas passariam pelo "ainda não há canal" e criariam duas
+// assinaturas, e cada evento chegaria em dobro.
+function conectar(uid: string): Promise<void> {
+  if (canal && dono === uid) return Promise.resolve();
+  if (conectando && dono === uid) return conectando;
   dono = uid;
+  conectando = abrirCanal(uid).finally(() => {
+    conectando = null;
+  });
+  return conectando;
+}
+
+async function abrirCanal(uid: string) {
+  const supabase = createClient();
+  if (canal) {
+    await supabase.removeChannel(canal);
+    canal = null;
+  }
   // O canal privado exige o token do usuário na conexão.
   await supabase.realtime.setAuth();
   canal = supabase

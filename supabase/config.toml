@@ -439,5 +439,7 @@ uri = "pg-functions://postgres/private/hook_before_user_created"
 [functions.processar-avatar]
 verify_jwt = true
 
+# Quem chama esta função é o banco (trigger em public.messages), não um
+# usuário: não há JWT. A função confere um segredo compartilhado com o banco.
 [functions.notificar-mensagem]
-verify_jwt = true
+verify_jwt = false

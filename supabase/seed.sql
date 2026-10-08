@@ -118,3 +118,15 @@ from (values
   ('admin',      'Bem-vindos ao beta do Peripatos. Contem o que estiver estranho.',    null, interval '2 days')
 ) as x (username, body, gif_id, idade)
 join public.profiles p on p.username = x.username;
+
+-- ---------------------------------------------------------------------------
+-- Notificações push no ambiente LOCAL
+-- ---------------------------------------------------------------------------
+-- Em produção estes dois segredos são criados à mão (docs/deploy.md), com um
+-- valor aleatório. Aqui o endereço é o do gateway local, de dentro da rede do
+-- Docker, e o segredo é fixo e conhecido: só serve para o Supabase local, e é
+-- o mesmo que scripts/gerar-vapid.mjs grava em supabase/functions/.env.
+select vault.create_secret('http://kong:8000/functions/v1/notificar-mensagem', 'peripatos_push_url', 'Endereço da função de notificação (local)')
+where not exists (select 1 from vault.secrets where name = 'peripatos_push_url');
+select vault.create_secret('segredo-so-do-ambiente-local', 'peripatos_push_segredo', 'Prova que o pedido de notificação veio do banco (local)')
+where not exists (select 1 from vault.secrets where name = 'peripatos_push_segredo');
