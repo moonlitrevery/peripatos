@@ -84,5 +84,6 @@ confirmados). Evento cancelado ou ocultado não "aconteceu".
 - **Banir quem organiza cancela os eventos dela**, avisando quem ia.
 - **O lembrete também vai para quem organiza.**
 - **Tags sensíveis não marcam evento.**
-- **A Política de privacidade e os Termos não foram alterados neste PR**, como
-  combinado: local, presença e os avisos novos entram no PR único depois.
+- **A Política de privacidade e os Termos** cobrem os eventos a partir da
+  versão `2026-10-16-rascunho` (migration `20261016000001_termos_dos_eventos.sql`),
+  a mesma que cobre recém-chegados, seguir pelo post e cargos.

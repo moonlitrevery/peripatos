@@ -37,10 +37,15 @@ test("termos desatualizados: vê o que mudou, e só continua depois de aceitar",
   await expect(page).toHaveURL(/\/aceite$/);
   await expect(page.getByRole("heading", { level: 1, name: "Os termos do Peripatos mudaram" })).toBeVisible();
   const mudou = page.getByRole("region", { name: "O que mudou" });
-  await expect(mudou.getByRole("listitem").first()).toContainText("aba de notificações");
-  await expect(mudou.getByText("Uma conquista ganha não é retirada.")).toBeVisible();
-  // Uma versão só cobre as três mudanças: notificações, conquistas e tags sensíveis.
-  await expect(mudou.getByText(/deixaram de contar como gostos/)).toBeVisible();
+  await expect(mudou.getByRole("listitem").first()).toContainText("Agora existem eventos");
+  await expect(mudou.getByText(/local exato e o link só aparecem para quem organiza e para quem já está confirmado/)).toBeVisible();
+  await expect(mudou.getByText(/dura até 60 dias, mesmo que a conta de quem organizava seja excluída/)).toBeVisible();
+  await expect(mudou.getByText(/Recomendamos marcar em lugar público/)).toBeVisible();
+  // Uma versão só cobre as quatro entregas: eventos, recém-chegados, seguir pelo post e cargos.
+  await expect(mudou.getByText(/lista de recém-chegados/)).toBeVisible();
+  await expect(mudou.getByText(/guardamos de qual post foi/)).toBeVisible();
+  await expect(mudou.getByText(/Quem é nomeado é avisado por uma notificação/)).toBeVisible();
+  await expect(mudou.getByRole("listitem")).toHaveCount(7);
   await expect(page.getByText("Você tinha aceitado a versão anterior em")).toBeVisible();
 
   // Nenhuma outra tela do app abre antes do aceite.

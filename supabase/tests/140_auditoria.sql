@@ -161,7 +161,7 @@ select tests.logout();
 select is(
   (select termos_versao || '|' || (termos_aceitos_em > now() - interval '1 minute')::text
    from private.accounts where user_id = tests.uid('novo')),
-  '2026-10-09-rascunho|true',
+  '2026-10-16-rascunho|true',
   'a versão aceita e a data do aceite ficam registradas'
 );
 

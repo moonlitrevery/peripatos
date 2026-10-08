@@ -1,0 +1,14 @@
+-- =============================================================================
+-- 26 · Termos e Política: uma versão nova para tudo o que entrou desde a última
+-- =============================================================================
+-- Recém-chegados, seguir pelo post, cargos e eventos entraram em entregas
+-- separadas, sem mexer nos textos. Esta versão cobre os quatro de uma vez,
+-- para ninguém passar pelo aceite mais de uma vez.
+--
+-- É um INSERT só: o trigger de termos_versoes avisa quem tinha aceitado a
+-- versão anterior, e a partir daqui postar, mandar mensagem, criar evento e
+-- participar de evento pedem o novo aceite. O app troca a constante em
+-- src/lib/legal.ts na mesma entrega. No deploy: o db push vem DEPOIS de o app
+-- novo estar no ar (docs/deploy.md).
+-- =============================================================================
+insert into private.termos_versoes (versao) values ('2026-10-16-rascunho');
