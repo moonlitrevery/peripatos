@@ -7,7 +7,7 @@
 -- =============================================================================
 begin;
 \ir _helpers.psql
-select plan(151);
+select plan(153);
 
 select tests.seed_world();
 
@@ -546,8 +546,18 @@ select is(
 -- ---------------------------------------------------------------------------
 -- Minotauro
 -- ---------------------------------------------------------------------------
+-- O projeto sobe com o enigma FECHADO: o hash de uma resposta aleatória que
+-- ninguém conhece.
+select ok(
+  (select valor ~ '^\$2[aby]\$10\$.{53}$' from private.config where chave = 'enigma_hash'),
+  'o banco sobe com um hash bcrypt no lugar da resposta do enigma'
+);
+select is(
+  (select count(*) from private.config where chave = 'fundador_ate'), 0::bigint,
+  'e sem data de fim do beta'
+);
 select tests.login('bia');
-select is(public.responder_enigma('qualquer coisa'), false, 'sem resposta definida no banco, ninguém acerta');
+select is(public.responder_enigma('qualquer coisa'), false, 'com a resposta aleatória que ninguém conhece, ninguém acerta');
 select throws_ok($$ select public.responder_enigma(null) $$, 'PT400', null, 'resposta nula é recusada');
 select throws_ok($$ select public.responder_enigma(repeat('a', 201)) $$, 'PT400', null, 'resposta enorme também');
 select throws_ok($$ select private.definir_resposta_do_enigma('abracadabra') $$, '42501', null, 'usuário logado não define a resposta');

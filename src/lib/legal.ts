@@ -14,4 +14,6 @@ export const MUDANCAS_DA_VERSAO: string[] = [
   "Agora existem conquistas, dadas automaticamente pelo que você faz no app: postar, conversar, completar o perfil, tempo de conta e as pessoas com quem você se segue mutuamente.",
   "Uma das conquistas usa a hora em que você publicou um post ou enviou uma mensagem. Não passamos a registrar nada de novo sobre o seu uso: é a hora que posts e mensagens já guardavam.",
   "Suas conquistas aparecem no seu perfil, e você pode esconder qualquer uma. Uma conquista ganha não é retirada.",
+  "Orientação sexual, identidade de gênero e religião deixaram de contar como gostos: não entram mais no cálculo de afinidade nem em \"em comum\" com ninguém, nem com quem você segue mutuamente. Continuam visíveis só para quem você segue mutuamente, numa seção à parte do perfil.",
+  "O Início passou a mostrar os posts pela hora, do mais recente para o mais antigo. Os gostos em comum decidem quem aparece, não a ordem.",
 ];

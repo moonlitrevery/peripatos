@@ -58,7 +58,7 @@ auth:user → rpc/conta_status → auth:user → rpc/total_nao_lidas → profile
 | Sugestões do desktop pedidas só quando a coluna existe | `Sugestoes` | zero custo no celular e no tablet |
 | Funções do Vercel em `gru1` | `vercel.json` | cada onda passa de ~130 ms para poucos ms (ver `docs/deploy.md`, passo 10). **É o maior ganho, e este script não o mede** |
 
-Sobre o `getClaims`: com chaves de assinatura assimétricas (o padrão dos projetos novos do Supabase, e o do ambiente local atual) a verificação é local e a ida ao Auth some. Se o projeto de produção ainda estiver com o segredo simétrico antigo (HS256), o `getClaims` cai sozinho no `getUser()`: continua correto, só não ganha essa onda. Dá para conferir em *Project Settings → JWT Keys*.
+Sobre o `getClaims`: com chaves de assinatura assimétricas (o padrão dos projetos novos do Supabase, e o do ambiente local atual) a verificação é local e a ida ao Auth some. Com o segredo simétrico antigo (HS256) o `getClaims` cai sozinho no `getUser()`: continua correto, e **não traz ganho nenhum** até a migração (uma onda a mais do que a tabela acima mostra). O projeto de produção publica uma chave ES256; como confirmar que ela é a em uso, e como migrar se não for, está em `docs/deploy.md`, passo 10.
 
 ### Perfil e conversa ficaram sem esqueleto, de propósito
 

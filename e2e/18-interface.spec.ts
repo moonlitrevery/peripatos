@@ -369,23 +369,37 @@ test.describe("Perfil e Gente", () => {
     const page = await contexto.newPage();
     // Um GIF em pé, 300 x 1600: sem limite, ocuparia mais do que a tela.
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="1600"><rect width="300" height="1600" fill="#1e5a66"/></svg>`;
-    await page.route(/giphy\.com\//, (rota) => rota.fulfill({ contentType: "image/svg+xml", body: svg }));
+    // A imagem demora a chegar: dá para medir a moldura ANTES e DEPOIS do GIF.
+    let liberar = () => {};
+    const chegou = new Promise<void>((r) => (liberar = r));
+    await page.route(/giphy\.com\//, async (rota) => {
+      await chegou;
+      await rota.fulfill({ contentType: "image/svg+xml", body: svg });
+    });
     await page.goto("/u/caue");
     const gif = page.getByAltText("GIF: GIF muito alto");
     await gif.scrollIntoViewIfNeeded();
-    await expect(gif).toBeVisible();
+    const medir = () =>
+      gif.evaluate((img: HTMLImageElement) => {
+        const r = img.getBoundingClientRect();
+        return { altura: Math.round(r.height), largura: Math.round(r.width), topo: Math.round(r.top + window.scrollY), tela: window.innerHeight };
+      });
+    const antes = await medir();
+    liberar();
     await expect.poll(async () => gif.evaluate((img: HTMLImageElement) => img.naturalHeight)).toBe(1600);
-    const medidas = await gif.evaluate((img) => ({ altura: img.getBoundingClientRect().height, tela: window.innerHeight, largura: img.getBoundingClientRect().width }));
-    expect(medidas.altura).toBeLessThanOrEqual(medidas.tela * 0.45 + 1);
-    expect(medidas.altura).toBeLessThanOrEqual(320);
-    // Sem distorcer: a proporção do GIF é mantida.
-    expect(Math.abs(medidas.largura / medidas.altura - 300 / 1600)).toBeLessThan(0.02);
+    const depois = await medir();
+    expect(depois.altura).toBeLessThanOrEqual(depois.tela * 0.45 + 1);
+    expect(depois.altura).toBeLessThanOrEqual(320);
+    // A moldura já tinha esse tamanho antes de o GIF chegar: nada abaixo pula.
+    expect(depois).toEqual(antes);
+    // Sem distorcer nem cortar: o GIF se encaixa inteiro na moldura.
+    expect(await gif.evaluate((img) => getComputedStyle(img).objectFit)).toBe("contain");
     await contexto.close();
   });
 });
 
 test.describe("Layout responsivo", () => {
-  const TELAS = ["/", "/gente", "/u/caue", "/mensagens", "/voce", "/config"];
+  const TELAS = ["/", "/gente", "/u/caue", "/mensagens", "/notificacoes", "/voce", "/conquistas", "/config"];
 
   for (const largura of [375, 768, 1440]) {
     test(`${largura}px: navegação, coluna de leitura e nada cortado`, async ({ browser }) => {
@@ -430,7 +444,7 @@ test.describe("Layout responsivo", () => {
           expect(m.nav.h).toBe(m.alto);
           expect(m.nav.w).toBeLessThan(largura / 3);
           expect(m.main.x).toBeGreaterThanOrEqual(m.nav.w);
-          for (const aba of ["Início", "Gente", "Mensagens", "Você"]) await expect(nav.getByRole("link", { name: new RegExp(`^${aba}`) })).toBeVisible();
+          for (const aba of ["Início", "Gente", "Mensagens", "Notificações", "Você"]) await expect(nav.getByRole("link", { name: new RegExp(`^${aba}`) })).toBeVisible();
         }
 
         const sugestoes = page.getByRole("complementary", { name: "Sugestões" });
@@ -451,6 +465,54 @@ test.describe("Layout responsivo", () => {
       await contexto.close();
     });
   }
+
+  // Um controle que muda de lugar depois de aparecer é um toque que cai no
+  // lugar errado (e foi a causa de testes instáveis: o clique mirava onde o
+  // botão ESTAVA). Com o processador lento, para o que carrega depois ter
+  // tempo de aparecer, nenhum botão, link ou campo pode sair de onde surgiu.
+  test("nada clicável muda de lugar depois de aparecer", async ({ browser }) => {
+    test.setTimeout(180_000);
+    const contexto = await contextoDe(browser, "lia");
+    const andaram: string[] = [];
+    for (const tela of TELAS) {
+      const page = await contexto.newPage();
+      const cdp = await contexto.newCDPSession(page);
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+      await page.addInitScript(() => {
+        const primeira = new WeakMap<Element, number>();
+        const movidos = new Map<Element, { de: number; para: number }>();
+        (window as unknown as { __movidos: typeof movidos }).__movidos = movidos;
+        const olhar = () => {
+          // Só o conteúdo de verdade: o esqueleto é trocado inteiro, de propósito.
+          if (!document.querySelector("[data-esqueleto]")) {
+            for (const e of document.querySelectorAll("main button, main a, main input, main textarea, main select, main summary")) {
+              const q = e.getBoundingClientRect();
+              if (q.width === 0 && q.height === 0) continue;
+              const y = Math.round(q.top + window.scrollY);
+              const antes = primeira.get(e);
+              if (antes === undefined) primeira.set(e, y);
+              else if (Math.abs(antes - y) > 1) movidos.set(e, { de: antes, para: y });
+            }
+          }
+          requestAnimationFrame(olhar);
+        };
+        requestAnimationFrame(olhar);
+      });
+      await page.goto(tela);
+      await expect(page.locator("main h1").first()).toBeVisible();
+      await expect(page.locator("[data-esqueleto]")).toHaveCount(0);
+      await page.waitForTimeout(3500);
+      const lista = await page.evaluate(() =>
+        [...(window as unknown as { __movidos: Map<Element, { de: number; para: number }> }).__movidos].map(
+          ([e, m]) => `${e.tagName.toLowerCase()} "${(e.getAttribute("aria-label") ?? e.textContent ?? "").trim().slice(0, 40)}" ${m.de} → ${m.para}`,
+        ),
+      );
+      andaram.push(...lista.map((l) => `${tela}: ${l}`));
+      await page.close();
+    }
+    expect(andaram, "controles que mudaram de lugar depois de aparecer").toEqual([]);
+    await contexto.close();
+  });
 
   test("as sugestões só são pedidas ao servidor quando a coluna existe", async ({ browser }) => {
     const pedidas = (page: Page) => {
@@ -531,7 +593,7 @@ test.describe("Layout responsivo", () => {
       for (const onde of ["celular", "desktop"] as const) {
         const contexto = onde === "celular" ? await contextoDe(browser, "lia", { colorScheme: tema }) : await desktopDaLia(browser, 1440, tema);
         const page = await contexto.newPage();
-        for (const tela of ["/", "/gente", "/u/caue", "/mensagens", "/voce"]) {
+        for (const tela of ["/", "/gente", "/u/caue", "/mensagens", "/notificacoes", "/conquistas", "/voce"]) {
           await page.goto(tela);
           await expect(page.locator("main h1").first()).toBeVisible();
           if (onde === "desktop" && tela !== "/gente") {

@@ -26,8 +26,12 @@ que a data que você escolher seja anterior à conta da pessoa.
 
 ### 2. A resposta do enigma (conquista Minotauro)
 
-O banco guarda só um hash bcrypt da resposta. Sem hash, ninguém acerta: é o
-estado em que o projeto sobe. Para definir ou trocar:
+O banco guarda só um hash bcrypt da resposta. **O projeto sobe com o enigma
+fechado**: a migration `20261011000001_enigma_fechado.sql` grava o hash de uma
+resposta aleatória de 256 bits, gerada dentro do banco e descartada na mesma
+instrução. Ninguém a conhece (nem eu, nem você, nem está em arquivo algum), e
+até você trocar a conquista é impossível. Para definir a resposta de verdade,
+ou trocá-la depois:
 
 ```sql
 select private.definir_resposta_do_enigma('a resposta aqui');
@@ -36,7 +40,7 @@ select private.definir_resposta_do_enigma('a resposta aqui');
 - Maiúsculas, espaços nas pontas e espaços repetidos não contam (`"  Fio  DE ariadne"`
   e `"fio de ariadne"` são a mesma resposta). Acento conta. Até 72 caracteres.
 - Trocar a resposta não tira o Minotauro de quem já resolveu.
-- Para desligar o enigma: `delete from private.config where chave = 'enigma_hash';`
+- Para fechar o enigma de novo: `select private.definir_resposta_do_enigma(encode(extensions.gen_random_bytes(32), 'hex'));`
 - A resposta aparece no comando que você roda. Não a ponha em migration, em
   `seed.sql`, em issue nem em commit; o histórico do SQL Editor é seu, mas apague
   a consulta salva se o projeto tiver outros administradores.
@@ -162,6 +166,8 @@ de mútuo), e cada uma gera a notificação de conquista nova.
 - **Secreta que você ainda não ganhou** pode aparecer no perfil de quem a
   ganhou e escolheu mostrar (é o caso do Minotauro). Ela não aparece na sua
   lista de conquistas, e a página dela só abre para quem já viu alguém com ela.
-- **Os Termos ganharam versão nova** (`2026-10-09-rascunho`): a Política
-  passou a descrever notificações e conquistas. No deploy, quem já tem conta
-  passa pela tela de novo aceite.
+- **Os Termos ganharam UMA versão nova** (`2026-10-09-rascunho`), que cobre
+  de uma vez as notificações, as conquistas e as tags sensíveis fora da
+  afinidade. No deploy, quem já tem conta passa pela tela de novo aceite uma
+  vez só. O teste `170_notificacoes.sql` confere que existe uma única linha
+  nova em `private.termos_versoes`.

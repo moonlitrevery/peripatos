@@ -39,6 +39,8 @@ test("termos desatualizados: vê o que mudou, e só continua depois de aceitar",
   const mudou = page.getByRole("region", { name: "O que mudou" });
   await expect(mudou.getByRole("listitem").first()).toContainText("aba de notificações");
   await expect(mudou.getByText("Uma conquista ganha não é retirada.")).toBeVisible();
+  // Uma versão só cobre as três mudanças: notificações, conquistas e tags sensíveis.
+  await expect(mudou.getByText(/deixaram de contar como gostos/)).toBeVisible();
   await expect(page.getByText("Você tinha aceitado a versão anterior em")).toBeVisible();
 
   // Nenhuma outra tela do app abre antes do aceite.

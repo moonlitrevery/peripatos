@@ -282,6 +282,27 @@ Por que importa: toda página logada é montada no servidor, e para montá-la o 
 
 - [ ] Faça o deploy e anote o endereço (`https://<projeto>.vercel.app` ou o domínio próprio).
 
+### Chaves de assinatura do JWT (assimétricas)
+
+As páginas do app conferem a sessão com `getClaims()` (`src/lib/sessao.ts`). Com **chave de assinatura assimétrica** (ES256) a conferência é feita no próprio servidor do app, pela assinatura do token, e economiza uma ida ao Auth em cada navegação. Com o **segredo simétrico antigo** (HS256, "Legacy JWT secret") o `getClaims()` não tem como conferir sozinho e chama o Auth, igual ao `getUser()`: **continua correto e seguro, só não traz ganho nenhum**. Não há nada no app para mudar num caso ou no outro.
+
+**Situação em 08/10/2026.** O endereço público das chaves do projeto de produção (`https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`) devolve **uma chave ES256**. Num projeto que só tem o segredo antigo essa lista vem vazia, então o projeto **tem** uma chave assimétrica. O que não dá para ver de fora é se ela é a chave **em uso** ou se está só **de reserva** (*standby*): as duas aparecem nessa lista. Como ninguém criou chave à mão neste projeto, o esperado é que ela seja a em uso (é o padrão dos projetos novos), mas confira:
+
+- [ ] **[painel]** *Project Settings → JWT Keys* (ou *Authentication → Signing Keys*). Em **Current key** deve aparecer **ECC (P-256)**. Se for isso, está pronto: o `getClaims()` já confere localmente.
+- [ ] Outro jeito, sem painel: entre no app em produção, abra as ferramentas do navegador, copie o valor do cookie `sb-<ref>-auth-token` (é um JSON; pegue o `access_token`) e decodifique **só o cabeçalho** (a primeira das três partes, em base64). `"alg":"ES256"` com um `kid` = assimétrica em uso. `"alg":"HS256"` = ainda o segredo antigo. Não cole o token em site nenhum: `echo '<primeira parte>' | base64 -d` basta.
+
+**Se a chave em uso ainda for a Legacy (HS256), como migrar:**
+
+1. *JWT Keys → Create standby key* (se já não houver uma), tipo **ECC (P-256)**. Ela passa a ser publicada no endereço das chaves, mas ainda não assina nada.
+2. Espere uns 20 minutos, para todo servidor que guarda essa lista em memória pegar a chave nova.
+3. *Rotate keys*. A partir daqui os tokens novos saem com ES256. **Ninguém é deslogado**: os tokens antigos continuam valendo até expirarem (1 hora), porque a chave anterior fica como "previously used".
+4. Rode `pnpm verificar:deploy` e o teste de fumaça (passo 13): entrar, postar, abrir uma conversa.
+5. Depois de pelo menos 1 hora e meia (a validade do token mais a folga), *Revoke* na chave antiga. Não revogue antes: quem ainda estiver com token assinado por ela cai.
+
+O que **não** muda com a rotação: as chaves `anon`/`publishable` e `service_role` do projeto (são as API keys, outra coisa), as variáveis do Vercel e as Edge Functions. A `processar-avatar` usa `verify_jwt = true`, que o gateway do Supabase confere com as chaves novas sozinho.
+
+Depois de migrar, cada servidor do app busca a lista de chaves uma vez e guarda em memória por alguns minutos; a primeira navegação de um servidor recém-acordado faz essa ida a mais, e as seguintes não.
+
 ## 11. Site URL — [painel]
 
 - [ ] *Authentication → URL Configuration → Site URL*: o endereço do Vercel do passo 10.

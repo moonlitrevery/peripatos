@@ -49,6 +49,7 @@ const ROTAS = [
   { nome: "Gente", caminho: "/gente", aba: "Gente" },
   { nome: "Perfil de outra pessoa", caminho: "/u/caue", aba: null },
   { nome: "Mensagens", caminho: "/mensagens", aba: "Mensagens" },
+  { nome: "Notificações", caminho: "/notificacoes", aba: "Notificações" },
   { nome: "Você", caminho: "/voce", aba: "Você" },
   { nome: "Configurações", caminho: "/config", aba: null },
 ];

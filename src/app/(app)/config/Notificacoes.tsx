@@ -80,28 +80,37 @@ export function Notificacoes({ porTipo }: { porTipo: PushPorTipo }) {
             {t.rotulo}
           </label>
         ))}
-        <p className="fino" role="status" data-testid="push-por-tipo">
+        <p className="fino min-h-5" role="status" data-testid="push-por-tipo">
           {salvo}
         </p>
       </fieldset>
-      <p role="status" data-testid="estado-do-push">
-        {estado === null ? "Conferindo…" : TEXTO[estado]}
-      </p>
-      {erro && (
-        <p role="alert" className="erro">
-          {erro}
+      {/* O estado deste aparelho só é conhecido no navegador, depois que a
+          tela já apareceu: "Conferindo…" vira um parágrafo de várias linhas e,
+          às vezes, um botão. O espaço fica reservado desde o início (cabe o
+          texto mais longo, ou o texto curto com o botão) para que nada abaixo
+          mude de lugar. Logo depois vêm "Sair de todos os dispositivos" e
+          "Excluir minha conta": um botão que anda debaixo do dedo, ali, é o
+          toque caindo no lugar errado. */}
+      <div className="flex min-h-40 flex-col gap-4">
+        <p role="status" data-testid="estado-do-push">
+          {estado === null ? "Conferindo…" : TEXTO[estado]}
         </p>
-      )}
-      {estado === "desligado" && (
-        <button type="button" className="btn btn-pri self-start" disabled={pendente} onClick={() => alternar(true)}>
-          {pendente ? "Ativando…" : "Ativar notificações neste aparelho"}
-        </button>
-      )}
-      {estado === "ligado" && (
-        <button type="button" className="btn btn-qui self-start" disabled={pendente} onClick={() => alternar(false)}>
-          {pendente ? "Desativando…" : "Desativar neste aparelho"}
-        </button>
-      )}
+        {erro && (
+          <p role="alert" className="erro">
+            {erro}
+          </p>
+        )}
+        {estado === "desligado" && (
+          <button type="button" className="btn btn-pri self-start" disabled={pendente} onClick={() => alternar(true)}>
+            {pendente ? "Ativando…" : "Ativar notificações neste aparelho"}
+          </button>
+        )}
+        {estado === "ligado" && (
+          <button type="button" className="btn btn-qui self-start" disabled={pendente} onClick={() => alternar(false)}>
+            {pendente ? "Desativando…" : "Desativar neste aparelho"}
+          </button>
+        )}
+      </div>
       <p className="fino">
         Os tipos valem para a sua conta. Ativar ou desativar vale para este aparelho e este navegador. Quem não entra há muito tempo deixa de receber sozinho.
       </p>

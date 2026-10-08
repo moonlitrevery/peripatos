@@ -189,7 +189,7 @@ h1, h2, h3 {
   .cartao-elo:hover, a.cartao:hover { border-color: var(--tinta-2); }
   .aba-nav:hover { color: var(--petroleo); background: color-mix(in srgb, var(--petroleo) 8%, transparent); }
   main a:hover, aside a:hover { text-decoration-line: underline; text-underline-offset: 4px; }
-  main a.btn:hover, main a.cartao:hover, aside a.btn:hover, .elo-do-cartao:hover { text-decoration-line: none; }
+  main a.btn:hover, main a.cartao:hover, main a.conquista:hover, aside a.btn:hover, .elo-do-cartao:hover { text-decoration-line: none; }
   main button.fino:hover, main button.underline:hover, main a.underline:hover, aside a.underline:hover { color: var(--tinta); }
   summary:hover { color: var(--petroleo); cursor: pointer; }
   [role="tab"]:hover { color: var(--petroleo); }

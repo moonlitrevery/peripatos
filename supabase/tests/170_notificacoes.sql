@@ -3,7 +3,7 @@
 -- =============================================================================
 begin;
 \ir _helpers.psql
-select plan(97);
+select plan(99);
 
 select tests.seed_world();
 
@@ -212,6 +212,15 @@ select is(
 -- ---------------------------------------------------------------------------
 -- Termos atualizados
 -- ---------------------------------------------------------------------------
+-- Notificações, conquistas e tags sensíveis fora da afinidade entraram juntas:
+-- UMA versão nova, para ninguém passar pelo aceite duas vezes. (Ao publicar a
+-- próxima versão, atualize estes dois testes, como o literal de 140_auditoria.)
+select is(
+  (select array_agg(versao order by publicada_em) from private.termos_versoes),
+  array['2026-10-08-rascunho', '2026-10-09-rascunho'],
+  'depois da versão das mensagens existe uma única versão nova dos Termos'
+);
+select is(private.termos_versao_atual(), '2026-10-09-rascunho', 'e é ela a vigente');
 select is(tests.notifs('ana', 'termos_atualizados'), 0::bigint, 'sem versão nova, sem notificação de termos');
 insert into private.termos_versoes (versao) values ('2099-01-01-teste');
 select is(private.termos_versao_atual(), '2099-01-01-teste', 'a versão publicada por último é a vigente');
