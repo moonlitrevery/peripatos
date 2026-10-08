@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { banir, moderarAvatar, ocultarPost, resolverDenuncia } from "@/app/acoes/moderacao";
+import { banir, moderarAvatar, ocultarEvento, ocultarPost, resolverDenuncia } from "@/app/acoes/moderacao";
 import { Gif } from "@/components/Gif";
 import { rotuloDoMotivo } from "@/lib/denuncias";
 import { exigirSessao, meuCargo, nivelDaSessao } from "@/lib/sessao";
@@ -29,7 +29,7 @@ export default async function Moderacao({ searchParams }: PageProps<"/moderacao"
   const [denuncias, pendentes, cargos] = await Promise.all([
     supabase
       .from("reports")
-      .select("id, reason, details, status, created_at, post_id, profile_id, message_id, message_sender_id, message_body, message_gif_id, message_gif_alt, message_sent_at")
+      .select("id, reason, details, status, created_at, post_id, profile_id, message_id, message_sender_id, message_body, message_gif_id, message_gif_alt, message_sent_at, event_id, event_organizer_id, event_title, event_description, event_general_location")
       .in("status", ["aberta", "em_analise"])
       .order("created_at", { ascending: true })
       .limit(50),
@@ -60,6 +60,7 @@ export default async function Moderacao({ searchParams }: PageProps<"/moderacao"
     ...new Set([
       ...lista.flatMap((d) => (d.profile_id ? [d.profile_id] : [])),
       ...lista.flatMap((d) => (d.message_sender_id ? [d.message_sender_id] : [])),
+      ...lista.flatMap((d) => (d.event_organizer_id ? [d.event_organizer_id] : [])),
       ...(posts ?? []).map((p) => p.author_id),
     ]),
   ];
@@ -91,7 +92,8 @@ export default async function Moderacao({ searchParams }: PageProps<"/moderacao"
         <ul className="flex flex-col gap-4">
           {lista.map((d) => {
             const post = d.post_id ? postPorId.get(d.post_id) : undefined;
-            const alvoId = post?.author_id ?? d.profile_id ?? d.message_sender_id;
+            const alvoId = post?.author_id ?? d.profile_id ?? d.message_sender_id ?? d.event_organizer_id;
+            const ehEvento = d.event_id !== null;
             const ehMensagem = d.message_id !== null;
             const alvo = alvoId ? perfilPorId.get(alvoId) : undefined;
             return (
@@ -100,7 +102,7 @@ export default async function Moderacao({ searchParams }: PageProps<"/moderacao"
                   <header className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="text-lg font-bold">{rotuloDoMotivo(d.reason)}</h3>
                     <p className="fino">
-                      {d.post_id ? "Post" : ehMensagem ? "Mensagem" : "Perfil"} · <time dateTime={d.created_at}>{haQuantoTempo(d.created_at)}</time>
+                      {d.post_id ? "Post" : ehMensagem ? "Mensagem" : ehEvento ? "Evento" : "Perfil"} · <time dateTime={d.created_at}>{haQuantoTempo(d.created_at)}</time>
                     </p>
                   </header>
                   {d.details && (
@@ -112,7 +114,7 @@ export default async function Moderacao({ searchParams }: PageProps<"/moderacao"
 
                   <div className="border-linha bg-fundo flex flex-col gap-2 rounded-2xl border p-3">
                     <p className="fino">
-                      {post ? "Post de " : ehMensagem ? "Mensagem de " : "Perfil de "}
+                      {post ? "Post de " : ehMensagem ? "Mensagem de " : ehEvento ? "Evento de " : "Perfil de "}
                       {alvo ? (
                         <Link href={`/u/${alvo.username}`} className="text-petroleo font-semibold underline underline-offset-4">
                           {alvo.display_name} (@{alvo.username})
@@ -135,7 +137,17 @@ export default async function Moderacao({ searchParams }: PageProps<"/moderacao"
                         </p>
                       </>
                     )}
-                    {!post && !ehMensagem && alvo?.bio && <p className="break-words whitespace-pre-wrap">{alvo.bio}</p>}
+                    {ehEvento && (
+                      <>
+                        <p className="font-semibold break-words">{d.event_title}</p>
+                        {d.event_description && <p className="break-words whitespace-pre-wrap">{d.event_description}</p>}
+                        {d.event_general_location && <p className="fino">Local geral: {d.event_general_location}</p>}
+                        <p className="fino">
+                          Cópia feita no momento da denúncia. Você não tem acesso ao local exato, ao link nem a quem vai.
+                        </p>
+                      </>
+                    )}
+                    {!post && !ehMensagem && !ehEvento && alvo?.bio && <p className="break-words whitespace-pre-wrap">{alvo.bio}</p>}
                     {d.post_id && !post && <p className="text-tinta-2">O post não está mais disponível.</p>}
                   </div>
 
@@ -149,6 +161,14 @@ export default async function Moderacao({ searchParams }: PageProps<"/moderacao"
                         titulo="Ocultar este post"
                         explicacao="O post some para todos, inclusive para quem escreveu."
                         acao={ocultarPost.bind(null, post.id)}
+                      />
+                    )}
+                    {d.event_id && (
+                      <AcaoComMotivo
+                        rotulo="Ocultar evento"
+                        titulo="Ocultar este evento"
+                        explicacao="O evento some para todos, menos para quem organiza, e quem ia é avisado de que foi cancelado."
+                        acao={ocultarEvento.bind(null, d.event_id)}
                       />
                     )}
                     {alvo && !alvo.banned_at && (

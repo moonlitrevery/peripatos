@@ -43,6 +43,7 @@ const PushPorTipo = z.strictObject({
   avatar: z.boolean(),
   denuncia: z.boolean(),
   termos: z.boolean(),
+  evento: z.boolean(),
 });
 
 export type PushPorTipo = z.infer<typeof PushPorTipo>;

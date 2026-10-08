@@ -1,13 +1,14 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import { denunciarEvento } from "@/app/acoes/eventos";
 import { denunciarMensagem } from "@/app/acoes/mensagens";
 import { denunciar } from "@/app/acoes/social";
 import { Dialogo } from "@/components/Dialogo";
 import { MOTIVOS, type MotivoDenuncia } from "@/lib/denuncias";
 
 type Props = {
-  alvo: { postId: string } | { perfilId: string } | { mensagemId: string };
+  alvo: { postId: string } | { perfilId: string } | { mensagemId: string } | { eventoId: string };
   /** Texto do botão que abre o diálogo. */
   rotulo?: string;
   className?: string;
@@ -29,7 +30,7 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
   // Numa conversa ou no feed há um destes por item: os campos precisam de
   // ids próprios, senão o rótulo de um aponta para o campo de outro.
   const id = useId();
-  const oQue = "postId" in alvo ? "este post" : "mensagemId" in alvo ? "esta mensagem" : "este perfil";
+  const oQue = "postId" in alvo ? "este post" : "mensagemId" in alvo ? "esta mensagem" : "eventoId" in alvo ? "este evento" : "este perfil";
 
   function fechar() {
     setAberto(false);
@@ -66,13 +67,23 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
               setErro(null);
               iniciar(async () => {
                 const r =
-                  "mensagemId" in alvo ? await denunciarMensagem(alvo.mensagemId, motivo, detalhe) : await denunciar(alvo, motivo, detalhe);
+                  "mensagemId" in alvo
+                    ? await denunciarMensagem(alvo.mensagemId, motivo, detalhe)
+                    : "eventoId" in alvo
+                      ? await denunciarEvento(alvo.eventoId, motivo, detalhe)
+                      : await denunciar(alvo, motivo, detalhe);
                 if (r.ok) setEnviada(true);
                 else setErro(r.erro);
               });
             }}
           >
             <p className="fino">Quem foi denunciado não fica sabendo que foi você.</p>
+            {"eventoId" in alvo && (
+              <p className="fino">
+                A moderação recebe uma cópia do título, da descrição e do local geral. Ela não vê o local exato, o link
+                nem quem vai.
+              </p>
+            )}
             {"mensagemId" in alvo && (
               <p className="fino">
                 A moderação recebe uma cópia desta mensagem, e só dela. Ela não tem acesso ao resto da conversa.

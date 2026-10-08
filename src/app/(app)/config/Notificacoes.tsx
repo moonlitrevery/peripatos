@@ -11,6 +11,7 @@ const TIPOS: { chave: keyof PushPorTipo; rotulo: string }[] = [
   { chave: "conquista", rotulo: "Conquistas novas" },
   { chave: "avatar", rotulo: "Foto aprovada ou recusada" },
   { chave: "denuncia", rotulo: "Denúncia analisada" },
+  { chave: "evento", rotulo: "Eventos: pedidos, aceite, mudanças, cancelamento e lembrete" },
   { chave: "termos", rotulo: "Termos atualizados" },
 ];
 

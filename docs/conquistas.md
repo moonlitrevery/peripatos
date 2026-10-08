@@ -163,6 +163,8 @@ termos atualizados.
 | Hefesto | deu uma sugestão que virou funcionalidade | RPC `conceder_conquista`, só admin com 2FA, registrada em `moderation_actions` |
 | Nóstos | publicou um post 30 dias ou mais depois do post anterior | trigger em `posts` |
 | Panateneia | concluiu o onboarding entre `panateneia_inicio` e `panateneia_fim` | ao concluir o onboarding |
+| Argonauta | estava confirmado num evento que aconteceu | job de eventos, a cada 10 minutos (`docs/eventos.md`) |
+| Dionísio | organizou um evento que aconteceu com três ou mais confirmados | job de eventos |
 
 - **Só o banco concede.** Não existe INSERT nem DELETE em `user_achievements`
   para nenhum papel da API. A única coluna que a pessoa altera é `hidden`, e só

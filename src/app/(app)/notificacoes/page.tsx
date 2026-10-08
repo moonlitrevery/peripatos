@@ -22,6 +22,18 @@ function NomeDe({ pessoa }: { pessoa: Pessoa }) {
   );
 }
 
+/** O título do evento, com link enquanto o evento existe para quem lê. */
+function EloDoEvento({ id, titulo }: { id: string | null; titulo: string | null }) {
+  const nome = titulo ?? "um evento";
+  return id ? (
+    <Link href={`/eventos/${id}`} className={elo}>
+      {nome}
+    </Link>
+  ) : (
+    <strong>{nome}</strong>
+  );
+}
+
 /** "Ana", "Ana e Bia", "Ana, Bia e mais 3". */
 function Nomes({ pessoas, total }: { pessoas: Pessoa[]; total: number }) {
   const resto = total - pessoas.length;
@@ -141,6 +153,47 @@ export default async function Notificacoes() {
                       Política de privacidade
                     </Link>{" "}
                     foram atualizados.
+                  </>
+                );
+                break;
+              // Eventos. O título vem do banco só enquanto a pessoa ainda vê o
+              // evento; no cancelamento vem o título guardado, sem link se o
+              // evento deixou de existir.
+              case "evento_pedido": {
+                const p = g.pessoas[0];
+                figura = p ? avatar(p, 36) : null;
+                texto = (
+                  <>
+                    {p ? <NomeDe pessoa={p} /> : "Alguém"} pediu para participar de <EloDoEvento id={g.evento_id} titulo={g.evento_titulo} />.
+                  </>
+                );
+                break;
+              }
+              case "evento_aceito":
+                texto = (
+                  <>
+                    Seu pedido para <EloDoEvento id={g.evento_id} titulo={g.evento_titulo} /> foi aceito. O local exato ou o link já aparece para você.
+                  </>
+                );
+                break;
+              case "evento_alterado":
+                texto = (
+                  <>
+                    <EloDoEvento id={g.evento_id} titulo={g.evento_titulo} /> mudou de data, local ou link. Confira antes de ir.
+                  </>
+                );
+                break;
+              case "evento_cancelado":
+                texto = (
+                  <>
+                    O evento <EloDoEvento id={g.evento_id} titulo={g.evento_titulo} /> foi cancelado.
+                  </>
+                );
+                break;
+              case "evento_lembrete":
+                texto = (
+                  <>
+                    <EloDoEvento id={g.evento_id} titulo={g.evento_titulo} /> começa em menos de duas horas.
                   </>
                 );
                 break;

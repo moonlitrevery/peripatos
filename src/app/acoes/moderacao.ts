@@ -11,7 +11,7 @@ import { z } from "zod";
 // em moderation_actions, na mesma transação. Chamar isto sem cargo devolve
 // "Sem permissão para esta ação".
 
-type Rpc = "ocultar_post" | "banir_usuario" | "moderar_avatar" | "resolver_denuncia" | "definir_cargo" | "remover_cargo";
+type Rpc = "ocultar_post" | "banir_usuario" | "moderar_avatar" | "resolver_denuncia" | "definir_cargo" | "remover_cargo" | "ocultar_evento";
 
 async function chamar(fn: Rpc, args: Record<string, unknown>): Promise<Resultado> {
   const supabase = await createClient();
@@ -68,4 +68,10 @@ export async function removerCargo(userId: unknown, motivo: unknown) {
   const r = v.validar(z.object({ id: v.uuid, motivo: v.motivoDeModeracao }), { id: userId, motivo });
   if (!r.ok) return r.falha;
   return chamar("remover_cargo", { p_user_id: r.dado.id, p_motivo: r.dado.motivo });
+}
+
+export async function ocultarEvento(eventoId: unknown, motivo: unknown) {
+  const r = v.validar(z.object({ id: v.uuid, motivo: v.motivoDeModeracao }), { id: eventoId, motivo });
+  if (!r.ok) return r.falha;
+  return chamar("ocultar_evento", { p_evento: r.dado.id, p_motivo: r.dado.motivo });
 }

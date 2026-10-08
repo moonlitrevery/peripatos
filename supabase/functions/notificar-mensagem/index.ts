@@ -59,6 +59,12 @@ const AVISOS: Record<string, string> = {
   denuncia_analisada: "Sua denúncia foi analisada",
   termos_atualizados: "Os Termos do Peripatos mudaram",
   conquista: "Você ganhou uma conquista",
+  // Eventos: nem o título, nem quem, nem onde. Só que há novidade.
+  evento_pedido: "Alguém pediu para participar de um evento seu",
+  evento_aceito: "Seu pedido para um evento foi aceito",
+  evento_alterado: "Um evento em que você vai mudou",
+  evento_cancelado: "Um evento em que você ia foi cancelado",
+  evento_lembrete: "Um evento em que você vai começa em breve",
 };
 
 const UUID = /^[0-9a-f-]{36}$/i;

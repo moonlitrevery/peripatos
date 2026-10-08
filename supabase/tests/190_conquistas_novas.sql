@@ -28,7 +28,7 @@ update private.accounts set maioridade_verificada_em = now() - interval '60 days
 -- Catálogo
 -- ---------------------------------------------------------------------------
 select is(
-  (select array_agg(slug order by position) from public.achievements where position > 14),
+  (select array_agg(slug order by position) from public.achievements where position between 15 and 19),
   array['eco', 'eureka', 'hefesto', 'nostos', 'panateneia'], 'as cinco conquistas novas estão no catálogo'
 );
 select is(
@@ -37,12 +37,12 @@ select is(
   0::bigint, 'nenhuma é secreta nem nasce oculta: visíveis por padrão'
 );
 select is(
-  (select array_agg(slug) from public.achievements where is_manual and position > 14),
+  (select array_agg(slug) from public.achievements where is_manual and position between 15 and 19),
   array['hefesto'], 'das novas, só Hefesto é concedida à mão'
 );
 select is(
   (select count(*) from public.achievements a
-    where a.position > 14
+    where a.position between 15 and 19
       and (exists (select 1 from public.achievements b where b.slug <> a.slug and b.color = a.color)
         or exists (select 1 from public.achievements b where b.slug <> a.slug and b.emoji = a.emoji)
         or btrim(a.emoji_label) = '')),
@@ -50,7 +50,7 @@ select is(
 );
 select tests.login('ana');
 select is(
-  (select count(*) from public.achievements where position > 14), 5::bigint,
+  (select count(*) from public.achievements where position between 15 and 19), 5::bigint,
   'e aparecem no catálogo de quem ainda não ganhou nenhuma'
 );
 
