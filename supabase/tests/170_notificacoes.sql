@@ -3,7 +3,7 @@
 -- =============================================================================
 begin;
 \ir _helpers.psql
-select plan(99);
+select plan(100);
 
 select tests.seed_world();
 
@@ -212,15 +212,22 @@ select is(
 -- ---------------------------------------------------------------------------
 -- Termos atualizados
 -- ---------------------------------------------------------------------------
--- Notificações, conquistas e tags sensíveis fora da afinidade entraram juntas:
--- UMA versão nova, para ninguém passar pelo aceite duas vezes. (Ao publicar a
--- próxima versão, atualize estes dois testes, como o literal de 140_auditoria.)
+-- Cada leva de mudanças ganha UMA versão, para ninguém passar pelo aceite duas
+-- vezes: a 09 cobriu notificações, conquistas e tags sensíveis fora da
+-- afinidade; a 16 cobre recém-chegados, seguir pelo post, cargos e eventos, que
+-- entraram em quatro entregas. (Ao publicar a próxima versão, atualize estes
+-- dois testes, como os literais de 020_onboarding e 140_auditoria.)
 select is(
   (select array_agg(versao order by publicada_em) from private.termos_versoes),
-  array['2026-10-08-rascunho', '2026-10-09-rascunho'],
-  'depois da versão das mensagens existe uma única versão nova dos Termos'
+  array['2026-10-08-rascunho', '2026-10-09-rascunho', '2026-10-16-rascunho'],
+  'depois da versão das notificações existe uma única versão nova dos Termos'
 );
-select is(private.termos_versao_atual(), '2026-10-09-rascunho', 'e é ela a vigente');
+select is(private.termos_versao_atual(), '2026-10-16-rascunho', 'e é ela a vigente');
+select is(
+  (select count(*) from private.termos_versoes v
+    where v.publicada_em > (select publicada_em from private.termos_versoes where versao = '2026-10-09-rascunho')),
+  1::bigint, 'recém-chegados, seguir pelo post, cargos e eventos: uma linha nova só'
+);
 select is(tests.notifs('ana', 'termos_atualizados'), 0::bigint, 'sem versão nova, sem notificação de termos');
 insert into private.termos_versoes (versao) values ('2099-01-01-teste');
 select is(private.termos_versao_atual(), '2099-01-01-teste', 'a versão publicada por último é a vigente');

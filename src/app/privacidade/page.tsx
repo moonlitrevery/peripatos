@@ -48,7 +48,17 @@ export default function Privacidade() {
           outros veem e o que usamos para encontrar gente parecida com você. Base legal: execução do contrato.
         </li>
         <li>
-          <strong>O que você faz no app.</strong> Posts, quem você segue, quem você bloqueou e as denúncias que fez.
+          <strong>O que você faz no app.</strong> Posts, quem você segue, quem você bloqueou, as denúncias que fez e
+          os pedidos de tag nova que enviou.
+        </li>
+        <li>
+          <strong>De qual post veio um follow.</strong> Quando você segue alguém a partir de um post, guardamos de qual
+          post foi, para contar a essa pessoa. Seguir pelo perfil ou por outra tela não guarda nada disso.
+        </li>
+        <li>
+          <strong>Eventos.</strong> O que você escreve ao criar um evento (título, descrição, data, local geral, local
+          exato ou link, vagas e tags) e os eventos em que você pediu para participar, confirmou presença ou não foi
+          aceito. Base legal: execução do contrato.
         </li>
         <li>
           <strong>Mensagens diretas.</strong> O texto e os GIFs das conversas que você tem com quem você segue e que
@@ -56,9 +66,10 @@ export default function Privacidade() {
           para mostrar a você o que é novo.
         </li>
         <li>
-          <strong>Notificações dentro do app.</strong> Quem começou a te seguir, quando você e alguém passam a se
-          seguir, o resultado da análise da sua foto e das suas denúncias, mudanças nos Termos e conquistas novas. Só
-          você lê as suas, e elas são apagadas depois de 60 dias.
+          <strong>Notificações dentro do app.</strong> Quem começou a te seguir (e por qual post seu, se foi por um
+          post), quando você e alguém passam a se seguir, o resultado da análise da sua foto e das suas denúncias,
+          mudanças nos Termos, conquistas novas, o que acontece nos eventos em que você está e o aviso de que você
+          entrou para a equipe. Só você lê as suas, e elas são apagadas depois de 60 dias.
         </li>
         <li>
           <strong>Conquistas.</strong> Quais você ganhou, quando, e se cada uma aparece no seu perfil.
@@ -73,7 +84,10 @@ export default function Privacidade() {
           seus registros código de acesso, e-mail, RA nem tokens.
         </li>
       </ul>
-      <p>Não coletamos localização, contatos, nem dados de pagamento. Não há anúncios nem rastreadores.</p>
+      <p>
+        Não coletamos a localização do seu aparelho, contatos, nem dados de pagamento. O local de um evento é o que
+        quem organiza escreve, e nada mais. Não há anúncios nem rastreadores.
+      </p>
 
       <h2>O que ninguém vê</h2>
       <ul>
@@ -83,6 +97,77 @@ export default function Privacidade() {
         </li>
         <li>Quem você bloqueou não é avisado, e quem você denunciou não sabe que foi você.</li>
       </ul>
+
+      <h2>Quem aparece para quem</h2>
+      <ul>
+        <li>
+          Seu perfil, seus posts e seus gostos aparecem só para alunos da sua instituição. Quem você bloqueou, e quem
+          bloqueou você, não vê nada seu.
+        </li>
+        <li>
+          <strong>Recém-chegados.</strong> Durante os 14 dias seguintes à conclusão do seu cadastro, seu perfil pode
+          aparecer numa lista de &ldquo;Recém-chegados&rdquo; para as pessoas da sua instituição, junto com os gostos
+          que vocês têm em comum. A lista vem em ordem de chegada e <strong>não mostra a data</strong> em que você
+          entrou. Ela usa um registro que já existia (quando a sua maioridade foi verificada) e não aparece para quem
+          você bloqueou.
+        </li>
+        <li>
+          <strong>Seguir pelo post.</strong> Se você segue alguém a partir de um post dessa pessoa, ela recebe a
+          notificação &ldquo;te seguiu pelo seu post&rdquo;, com o começo do texto do post. <strong>Só ela vê</strong>
+          : esse registro não aparece para mais ninguém, não é lido pela moderação e não vira contagem em lugar nenhum.
+          Se o post for apagado, a notificação fica sem o trecho.
+        </li>
+      </ul>
+
+      <h2>Eventos</h2>
+      <p>
+        Um evento diz onde alguém vai estar e quando. Por isso o que cada pessoa enxerga é limitado, e a limitação é
+        feita no banco de dados, não só na tela:
+      </p>
+      <ul>
+        <li>
+          <strong>Toda a sua instituição vê</strong> o título, a descrição, a data, o local geral (por exemplo
+          &ldquo;no campus&rdquo;), as tags e quem organiza. Se o evento tem vagas, vê também quantas sobram. Sem
+          vagas, nenhum número aparece.
+        </li>
+        <li>
+          <strong>Quem vai, o local exato e o link</strong> de um evento online só aparecem para quem organiza e para
+          quem já está confirmado (ou foi aceito). Quem pediu para participar e ainda espera resposta não vê nenhum
+          dos três.
+        </li>
+        <li>
+          <strong>A moderação e a administração não têm acesso</strong> à lista de quem vai, ao local exato nem ao
+          link, a não ser nos eventos em que elas mesmas participam, como qualquer pessoa.
+        </li>
+        <li>
+          Bloqueio, em qualquer direção, esconde o evento e esconde que a outra pessoa vai a um evento de terceiros.
+          Um evento que já aconteceu ou foi cancelado só continua visível para quem organizou ou estava nele.
+        </li>
+        <li>
+          <strong>Se alguém denunciar um evento</strong>, a moderação recebe uma cópia do título, da descrição e do
+          local geral, feita na hora da denúncia, junto com quem organiza. Ela não recebe o local exato, o link nem a
+          lista de quem vai.
+        </li>
+        <li>
+          Se o seu pedido para participar não for aceito, ou se quem organiza tirar você do evento, você não é
+          avisado e nenhum motivo é guardado. Esse registro fica só para o pedido não se repetir.
+        </li>
+        <li>
+          <strong>Se um evento for cancelado</strong>, quem ia (e quem tinha pedido para ir) recebe uma notificação
+          com o título do evento. Essa notificação guarda o título por até 60 dias,{" "}
+          <strong>mesmo que a conta de quem organizava seja excluída</strong>: sem ele, quem ia não saberia qual
+          evento deixou de acontecer. É o único texto de uma conta excluída que continua existindo, e some com a
+          notificação.
+        </li>
+        <li>
+          Quem vai recebe um lembrete duas horas antes. Se você ativar os avisos de evento no aparelho, eles não dizem
+          o título, o local nem o nome de ninguém.
+        </li>
+      </ul>
+      <p>
+        <strong>Recomendamos marcar eventos presenciais em lugar público</strong> e movimentado, e avisar alguém de
+        confiança aonde você vai. O Peripatos não confere quem aparece nem o que acontece num evento.
+      </p>
 
       <h2>Mensagens diretas</h2>
       <ul>
@@ -139,8 +224,10 @@ export default function Privacidade() {
       <ul>
         <li>
           As conquistas são dadas automaticamente, a partir do que já está guardado: seus posts, suas mensagens (só o
-          fato de existirem e a hora, nunca o conteúdo), seu perfil, seus gostos, a idade da conta e as pessoas com
-          quem você se segue mutuamente. Tags sensíveis nunca contam para conquista nenhuma.
+          fato de existirem e a hora, nunca o conteúdo), seu perfil, seus gostos, a idade da conta, quando você
+          concluiu o cadastro, as pessoas com quem você se segue mutuamente (e quando passaram a se seguir), seus
+          pedidos de tag aprovados e os eventos que você organizou ou a que confirmou presença. Duas delas são dadas
+          à mão pela administração. Tags sensíveis nunca contam para conquista nenhuma.
         </li>
         <li>
           <strong>Não registramos seus acessos nem o tempo que você passa no app.</strong> A conquista que depende de
@@ -176,6 +263,32 @@ export default function Privacidade() {
         <li>
           <strong>Você pode retirar o consentimento quando quiser</strong>, em Configurações → Gostos. Todas essas tags
           são apagadas na hora, junto com o registro do consentimento.
+        </li>
+      </ul>
+
+      <h2>Moderação e administração</h2>
+      <p>A equipe que cuida do Peripatos tem dois papéis, e o cargo de cada pessoa aparece no perfil dela:</p>
+      <ul>
+        <li>
+          <strong>Moderação.</strong> Lê a fila de denúncias, oculta posts e eventos, aprova e recusa fotos de perfil e
+          bane contas de usuários comuns.
+        </li>
+        <li>
+          <strong>Administração.</strong> Faz tudo o que a moderação faz e, além disso, nomeia e remove quem modera,
+          desfaz banimentos, aprova pedidos de tag, concede as conquistas dadas à mão e ajusta as datas do
+          beta e da abertura pública.
+        </li>
+        <li>
+          A moderação não age sobre quem é da própria equipe: banir, ocultar o que essa pessoa publicou, decidir sobre
+          a foto dela ou resolver uma denúncia contra ela cabe só à administração. Ninguém muda o próprio cargo.
+        </li>
+        <li>
+          <strong>Quem é nomeado recebe uma notificação</strong> e só consegue agir depois de ativar a verificação em
+          duas etapas. Toda nomeação e toda remoção ficam registradas, com quem fez e o motivo.
+        </li>
+        <li>
+          Nenhum dos dois papéis lê seu e-mail, suas conversas, suas tags sensíveis, nem a lista de quem vai, o local
+          exato ou o link dos eventos.
         </li>
       </ul>
 
@@ -250,7 +363,8 @@ export default function Privacidade() {
           <strong>Exclusão.</strong> Em Configurações, &ldquo;Excluir minha conta&rdquo; apaga de vez seu perfil, posts,
           gostos, seguidores, bloqueios, foto, as mensagens que você escreveu e seu login. As mensagens que a outra
           pessoa escreveu continuam com ela, numa conversa que passa a aparecer como sendo com uma &ldquo;conta
-          excluída&rdquo;.
+          excluída&rdquo;. Os eventos que você organizava são cancelados e apagados (quem ia é avisado), e suas
+          participações em eventos dos outros saem.
         </li>
         <li>
           <strong>Reclamar.</strong> Se achar que seus dados foram tratados de forma errada, fale com o encarregado.
@@ -269,7 +383,11 @@ export default function Privacidade() {
           Os registros de ações de moderação continuam, sem ligação com a sua conta, acompanhados do mesmo tipo de
           código, para reconhecer reincidência.
         </li>
-        <li>Nada mais: nem e-mail, nem conteúdo.</li>
+        <li>
+          Se você organizava um evento que ainda ia acontecer, o <strong>título</strong> dele fica na notificação de
+          cancelamento de quem ia, por até 60 dias. A notificação não diz quem organizava.
+        </li>
+        <li>Nada mais: nem e-mail, nem o restante do que você publicou.</li>
       </ul>
 
       <h2>Cookies e o que fica neste aparelho</h2>

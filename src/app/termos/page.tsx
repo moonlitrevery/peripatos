@@ -61,10 +61,55 @@ export default function Termos() {
         <li>Insistir depois que a pessoa deixou de te seguir ou te bloqueou, por qualquer meio, é assédio.</li>
       </ul>
 
+      <h2>Eventos</h2>
+      <p>
+        Qualquer pessoa pode marcar um evento, presencial ou online, para gente da própria instituição. As regras
+        acima valem inteiras nos eventos, e mais estas:
+      </p>
+      <ul>
+        <li>
+          <strong>Quem organiza é responsável pelo que marca</strong>: pelo que escreve no evento, pelo lugar ou pelo
+          link que escolhe e por quem aceita. O Peripatos só oferece a ferramenta. Ele não organiza, não confere e
+          não acompanha nenhum evento, e não responde pelo que acontece neles.
+        </li>
+        <li>
+          <strong>Não use um evento para assediar ou perseguir ninguém.</strong> Isso inclui marcar um evento para
+          atrair ou constranger uma pessoa, aparecer onde alguém vai para forçar um encontro, e insistir depois de
+          ter o pedido recusado ou de ter sido removido.
+        </li>
+        <li>
+          <strong>Não divulgue o endereço de terceiros.</strong> Não marque evento na casa de outra pessoa, nem
+          escreva o endereço de alguém, sem que ela tenha concordado. O campo de local geral aparece para toda a
+          instituição: não ponha endereço nele.
+        </li>
+        <li>
+          O local exato, o link e a lista de quem vai são só para quem está no evento. Não repasse nenhum deles para
+          quem não está.
+        </li>
+        <li>
+          Quem organiza pode recusar um pedido ou remover um participante sem explicar. Quem não foi aceito não deve
+          procurar a pessoa por outros meios para cobrar o motivo.
+        </li>
+      </ul>
+      <p>
+        <strong>Recomendamos marcar eventos presenciais em lugar público</strong> e movimentado, principalmente com
+        gente que você ainda não conhece, e avisar alguém de confiança aonde você vai.
+      </p>
+
       <h2>O que acontece se alguém descumprir</h2>
       <ul>
-        <li>Qualquer pessoa pode denunciar um post, um perfil ou uma mensagem que recebeu. Quem foi denunciado não fica sabendo quem denunciou.</li>
-        <li>A moderação pode ocultar posts, recusar fotos de perfil e banir contas.</li>
+        <li>
+          Qualquer pessoa pode denunciar um post, um perfil, um evento ou uma mensagem que recebeu. Quem foi denunciado
+          não fica sabendo quem denunciou.
+        </li>
+        <li>A moderação pode ocultar posts e eventos, recusar fotos de perfil e banir contas.</li>
+        <li>
+          A equipe tem dois papéis. A <strong>moderação</strong> cuida das denúncias, dos posts, dos eventos, das
+          fotos e dos banimentos de usuários comuns. A <strong>administração</strong> faz tudo isso e também nomeia e
+          remove quem modera, desfaz banimentos e decide o que envolve alguém da própria equipe. Quem é nomeado é
+          avisado, e ninguém muda o próprio cargo.
+        </li>
+        <li>Ocultar um evento, ou banir quem o organizava, cancela o evento e avisa quem ia.</li>
         <li>
           Uma conta banida perde o acesso e o e-mail não consegue se cadastrar de novo. Excluir a conta não desfaz o
           banimento.
@@ -74,8 +119,9 @@ export default function Termos() {
 
       <h2>Seu conteúdo</h2>
       <p>
-        O que você publica é seu e é sua responsabilidade. Ao publicar, você autoriza o Peripatos a exibir esse
-        conteúdo para os outros alunos da sua instituição, dentro das regras de visibilidade do app. Posts só têm texto
+        O que você publica é seu e é sua responsabilidade, inclusive os eventos que você marca. Ao publicar, você
+        autoriza o Peripatos a exibir esse conteúdo para os outros alunos da sua instituição, dentro das regras de
+        visibilidade do app. Posts só têm texto
         e GIFs do Giphy; não há envio de imagens em posts.
       </p>
 
