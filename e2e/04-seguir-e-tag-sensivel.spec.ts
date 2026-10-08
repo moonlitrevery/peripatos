@@ -28,15 +28,22 @@ test("seguir de volta vira mútuo, e só então a tag sensível aparece", async 
   await caue.goto("/u/iris");
   await expect(caue.getByText("Segue você", { exact: true })).toBeVisible();
   await caue.getByRole("button", { name: "Seguir Íris", exact: true }).click();
-  await expect(caue.getByRole("button", { name: "Deixar de seguir Íris" })).toBeEnabled();
+  // O botão muda na hora (otimista); aria-busy diz quando o servidor confirmou.
+  await expect(caue.getByRole("button", { name: "Deixar de seguir Íris" })).toHaveAttribute("aria-busy", "false");
   await caue.reload();
   await expect(caue.getByText("Vocês se seguem", { exact: true })).toBeVisible();
 
   // Agora é mútuo: o banco passa a devolver a tag sensível para a Íris.
   await iris.reload();
   await expect(iris.getByText("Vocês se seguem", { exact: true })).toBeVisible();
-  await expect(iris.getByText("Bissexual")).toBeVisible();
-  await expect(iris.getByText("As tags com cadeado aparecem porque vocês se seguem.")).toBeVisible();
+  // Ela fica numa seção própria ("Sobre"), em cor neutra: não é um gosto, não
+  // entra na contagem de "em comum" e nunca fica âmbar.
+  const sobre = iris.getByRole("region", { name: "Sobre" });
+  await expect(sobre.getByText("Bissexual")).toBeVisible();
+  await expect(sobre.getByText("Você vê esta seção porque vocês se seguem.")).toBeVisible();
+  await expect(sobre.locator(".chip-comum, .chip-sens")).toHaveCount(0);
+  await expect(iris.getByRole("region", { name: "Gostos" }).getByText("Bissexual")).toHaveCount(0);
+  await expect(iris.getByText("Vocês têm 1 gosto em comum")).toBeVisible();
 
   await daIris.close();
   await doCaue.close();

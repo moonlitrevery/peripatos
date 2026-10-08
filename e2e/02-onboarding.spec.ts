@@ -77,7 +77,9 @@ test.describe("Onboarding", () => {
     const gostos = page.getByRole("region", { name: "Gostos" });
     await expect(gostos.getByText("Rock", { exact: true })).toBeVisible();
     await expect(gostos.getByText("Café", { exact: true })).toBeVisible();
-    await expect(gostos.getByText("Bissexual")).toBeVisible();
+    // A tag sensível não é um gosto: fica na seção "Sobre".
+    await expect(gostos.getByText("Bissexual")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Sobre" }).getByText("Bissexual")).toBeVisible();
 
     // Revogar o consentimento apaga as tags sensíveis na hora.
     await page.goto("/config");

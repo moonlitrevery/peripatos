@@ -64,7 +64,7 @@ select is(
   'bloqueada: some de pessoas_parecidas'
 );
 select is(
-  (select count(*) from public.feed(null, 50) where author_id = tests.uid('ana')), 0::bigint,
+  (select count(*) from public.feed_para_voce(null, 50) where author_id = tests.uid('ana')), 0::bigint,
   'bloqueada: some do feed'
 );
 select throws_ok(
@@ -83,7 +83,7 @@ select tests.login('ana');
 select is((select count(*) from public.posts where author_id = tests.uid('bia')), 0::bigint, 'quem bloqueou não vê os posts');
 select is((select count(*) from public.profiles where id = tests.uid('bia')), 0::bigint, 'quem bloqueou não vê o perfil');
 select is(
-  (select count(*) from public.feed(null, 50) where author_id = tests.uid('bia')), 0::bigint,
+  (select count(*) from public.feed_para_voce(null, 50) where author_id = tests.uid('bia')), 0::bigint,
   'quem bloqueou: some do feed'
 );
 select is((select count(*) from public.blocks), 1::bigint, 'quem bloqueou vê a própria lista de bloqueios');

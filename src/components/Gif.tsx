@@ -15,7 +15,8 @@ export function Gif({ id, alt }: { id: string; alt?: string | null }) {
       loading="lazy"
       decoding="async"
       referrerPolicy="no-referrer"
-      className="bg-papel-2 max-h-80 w-full rounded-2xl object-contain"
+      // Altura máxima: no celular um GIF em pé nunca passa de menos da metade da tela.
+      className="bg-papel-2 max-h-[min(20rem,45svh)] w-auto max-w-full self-start rounded-2xl object-contain"
     />
   );
 }

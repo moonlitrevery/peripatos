@@ -30,7 +30,8 @@ test("bloquear faz a pessoa e os posts dela sumirem, nos dois sentidos", async (
   await expect(beto.getByText(POST_DO_TOMAS)).toBeVisible();
 
   // Bloquear pede confirmação.
-  await beto.getByRole("button", { name: "Bloquear", exact: true }).click();
+  await beto.getByRole("button", { name: "Mais ações para Tomás" }).click();
+  await beto.getByRole("menuitem", { name: "Bloquear" }).click();
   const dialogo = beto.getByRole("dialog", { name: "Bloquear Tomás?" });
   await expect(dialogo).toBeVisible();
   await dialogo.getByRole("button", { name: "Bloquear", exact: true }).click();

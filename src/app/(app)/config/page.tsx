@@ -9,9 +9,9 @@ export const metadata: Metadata = { title: "Configurações" };
 
 export default async function Config() {
   const { supabase, user } = await exigirSessao();
-  const perfil = await meuPerfil();
-
-  const [tags, comuns, sensiveis, bloqueios, status, cargo] = await Promise.all([
+  // Nada aqui depende do perfil: tudo sai junto, numa ida só.
+  const [perfil, tags, comuns, sensiveis, bloqueios, status, cargo] = await Promise.all([
+    meuPerfil(),
     supabase.from("tags").select("id, slug, name, category, is_sensitive").order("id"),
     supabase.from("profile_tags").select("tag_id").eq("user_id", user.id),
     supabase.from("profile_sensitive_tags").select("tag_id").eq("user_id", user.id),

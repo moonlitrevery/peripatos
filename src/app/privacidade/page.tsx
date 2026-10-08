@@ -126,7 +126,12 @@ export default function Privacidade() {
           <strong>Só aparecem para quem você segue e que te segue de volta</strong> (seguimento mútuo). Seguir alguém
           de volta é o que dá a essa pessoa acesso a elas.
         </li>
-        <li>Não entram no cálculo de afinidade com quem não é mútuo, então nem a ordem das sugestões as revela.</li>
+        <li>
+          <strong>Não são tratadas como gostos.</strong> Não entram no cálculo de afinidade nem na contagem de
+          &ldquo;em comum&rdquo; com ninguém, nem com quem você segue mutuamente: não influenciam quem aparece para
+          você, nem para quem você aparece, e a ordem das sugestões não as revela.
+        </li>
+        <li>No perfil, ficam numa seção à parte (&ldquo;Sobre&rdquo;), que só quem você segue mutuamente vê.</li>
         <li>A moderação e a administração não conseguem lê-las.</li>
         <li>Para tirar o acesso de alguém, remova a pessoa dos seus seguidores ou bloqueie.</li>
         <li>

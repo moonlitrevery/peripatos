@@ -269,6 +269,17 @@ Regras:
 - As `NEXT_PUBLIC_` são gravadas no build. Mudou uma, faça *Redeploy*.
 - Deixe *Preview* sem variáveis: um deploy de preview com as de produção seria um segundo app escrevendo no banco real.
 
+### Região das funções: São Paulo (`gru1`)
+
+O `vercel.json` da raiz fixa as funções do app em **`gru1` (São Paulo)**, a mesma região do Supabase (passo 1). Não há nada para clicar: vale a partir do próximo deploy.
+
+Por que importa: toda página logada é montada no servidor, e para montá-la o servidor vai ao Supabase de duas a quatro vezes, uma depois da outra. O padrão do Vercel é rodar as funções em `iad1` (Washington). De lá até São Paulo cada ida e volta custa algo como 120 a 150 ms; de `gru1`, poucos milissegundos. Com três idas em fila, são uns 400 ms a menos em cada toque, sem mudar uma linha do app. É o maior ganho de desempenho disponível (os números medidos estão em `docs/desempenho.md`).
+
+- [ ] Depois do deploy, confira em *Project → Settings → Functions → Function Region* que aparece **São Paulo, Brazil (South America) – gru1**. Se o painel mostrar outra região, o `vercel.json` não foi lido (ele precisa estar na raiz do repositório e no branch de produção).
+- [ ] Confira num deploy de verdade: em *Deployments → (o deploy) → Functions*, a coluna de região mostra `gru1`. Ou, no navegador, o cabeçalho de resposta `x-vercel-id` de qualquer página começa pela região de borda e termina com `gru1::…`.
+- Se um dia o Supabase mudar de região, mude aqui junto: função e banco em regiões diferentes devolvem a latência.
+- O plano Hobby aceita uma região só por projeto, e `gru1` está disponível nele.
+
 - [ ] Faça o deploy e anote o endereço (`https://<projeto>.vercel.app` ou o domínio próprio).
 
 ## 11. Site URL — [painel]

@@ -2,14 +2,23 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-// Uma verificação por requisição. Sempre getUser(): valida o token com o
-// servidor de Auth em vez de confiar no que está no cookie.
+// Quem está logado, para as páginas. Uma verificação por requisição.
+//
+// O proxy (src/proxy.ts) já validou a sessão desta mesma requisição com
+// getUser(), no servidor de Auth. Aqui usamos getClaims(), que confere a
+// ASSINATURA do token em vez de confiar no cookie: com chaves assimétricas
+// (o padrão dos projetos novos do Supabase) isso é feito na hora, sem outra
+// ida ao Auth; com o segredo simétrico antigo (o ambiente local), o próprio
+// getClaims() cai no getUser(). Nos dois casos o token é verificado, nunca só
+// lido. E nenhum dado sai sem o RLS conferir o mesmo token de novo.
+//
+// As server actions (src/app/acoes) continuam com getUser(): escrevem, e não
+// passam por aqui.
 export const sessaoAtual = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return { supabase, user };
+  const { data } = await supabase.auth.getClaims();
+  const id = data?.claims.sub;
+  return { supabase, user: typeof id === "string" && id ? { id } : null };
 });
 
 export async function exigirSessao() {

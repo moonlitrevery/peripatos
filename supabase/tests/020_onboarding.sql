@@ -31,7 +31,7 @@ select throws_ok(
   'sem onboarding: não segue'
 );
 select is((select count(*) from public.pessoas_parecidas()), 0::bigint, 'sem onboarding: pessoas_parecidas vazio');
-select is((select count(*) from public.feed()), 0::bigint, 'sem onboarding: feed vazio');
+select is((select count(*) from public.feed_para_voce()), 0::bigint, 'sem onboarding: feed vazio');
 
 -- quem é ativo não vê quem não terminou o onboarding
 select tests.login('ana');

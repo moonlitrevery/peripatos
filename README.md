@@ -77,6 +77,14 @@ Se `http://127.0.0.1:54321` não responder depois do `supabase start` (acontece 
 
 **Notificações push.** A inscrição do aparelho fica em `push_subscriptions` (só a própria pessoa lê). **Quem pede a notificação é o banco**: um trigger em `messages` chama a Edge Function `notificar-mensagem` a cada mensagem gravada (pela extensão `pg_net`, depois do commit), venha ela do app ou de uma chamada direta à API. O pedido leva só o id da mensagem e um segredo que prova que veio do banco; a função não aceita chamada de usuário. O que entra na notificação sai de `preparar_notificacao`, que só a função executa e que **não devolve o texto**: "Nova mensagem de <nome>" e mais nada. O banco só aceita endereço de serviço de push de navegador (`private.push_hosts`), para a função não virar ponte para outros endereços. No iPhone só funciona com o app instalado na tela de início.
 
+### Ajustes de interface e desempenho
+
+- **Início em duas abas**, "Para você" e "Seguindo", com a escolha lembrada no aparelho. A ordem é sempre a hora (ver "Afinidade e feed").
+- **Perfil**: Seguir/Seguindo e Mensagem à vista; remover dos seguidores, denunciar e bloquear num menu de mais ações (três pontos), navegável por teclado e leitor de tela. "Vocês se seguem" é um selo de status, sem borda nem fundo. As tags sensíveis ficam numa seção própria, "Sobre", em cor neutra.
+- **Avatar sempre em arco**, também com foto. **Card de Gente** só com o que é em comum (até cinco, depois "+N em comum"), e o card inteiro leva ao perfil. **GIF** com altura máxima.
+- **Desktop**: a partir de 768 px a navegação vira barra lateral e o conteúdo fica numa coluna de leitura; a partir de 1280 px entra uma coluna com gente parecida. No celular nada mudou. Hover em tudo o que é clicável, só onde há ponteiro.
+- **Desempenho**: de 4 ou 5 idas em fila ao banco por navegação para 2, esqueleto no toque, seguir e postar otimistas, funções do Vercel em São Paulo. Medição, comparação e a revisão da CSP: [`docs/desempenho.md`](docs/desempenho.md).
+
 ### Consentimentos
 
 - **Termos e Política.** No onboarding a pessoa marca o aceite, e o banco grava a versão aceita e a data (`private.accounts.termos_versao`, `termos_aceitos_em`). A versão vigente mora no banco (`private.termos_versao_atual()`) e em `src/lib/legal.ts`; o banco só aceita o aceite da versão vigente.
@@ -263,19 +271,20 @@ Todas as RPCs calculam para `auth.uid()` e respeitam as regras acima.
 
 **Peso de cada tag comum** = `ln(usuários ativos da instituição / usuários ativos com a tag)` (IDF). Tag rara pesa mais; tag que todo mundo tem pesa zero.
 
-**Peso de cada tag sensível** = `ln(usuários ativos) / 2`, **fixo**. Este é o terceiro desvio do pedido, e é proposital. Com IDF, o peso de uma tag sensível dependeria de quantas pessoas a marcaram. Como os pesos das tags comuns são calculáveis por qualquer usuário (as tags comuns são legíveis), bastaria olhar a própria afinidade com um mutual para deduzir quantas pessoas da instituição marcaram certa religião ou orientação. O peso fixo equivale ao IDF de uma tag que √N pessoas têm e não depende de nenhuma contagem sensível.
+**Tags sensíveis não são gostos.** Orientação sexual, identidade de gênero e religião não entram na afinidade nem em "tags em comum", para ninguém, nem entre mutuals: ter a mesma orientação não é compatibilidade, e tratar como tal dá cara de app de namoro. `private.afinidades` nem lê `profile_sensitive_tags`. Elas continuam visíveis só para mutuals (isso é o RLS da tabela, e não mudou) e aparecem no perfil numa seção à parte, "Sobre", em cor neutra.
 
-**`afinidade(outro)`** = soma dos pesos das tags em comum ÷ soma dos pesos das tags de quem lê. Tags sensíveis só entram, no numerador e no denominador, quando os dois são mutuals. Para um não-mutual elas simplesmente não existem na conta, então nem o valor nem a ordenação revelam quem tem tag sensível. Devolve `NULL` se a pessoa não é visível.
+**`afinidade(outro)`** = soma dos pesos das tags comuns que os dois têm ÷ soma dos pesos das tags comuns de quem lê. Devolve `NULL` se a pessoa não é visível.
 
-**`pessoas_parecidas(limite)`**: perfis ativos da instituição, por afinidade decrescente, com a lista de tags em comum (sensíveis só se mutual). Exclui a própria pessoa, bloqueados e banidos. Limite máximo de 50.
+**`pessoas_parecidas(limite)`**: perfis ativos da instituição, por afinidade decrescente, com a lista de tags em comum (nunca sensíveis). Exclui a própria pessoa, bloqueados e banidos. Limite máximo de 50.
 
-**`feed(cursor, limite)`**:
+**O feed: a afinidade decide QUEM aparece, a hora decide a ORDEM.** Duas RPCs, uma por aba do Início:
 
-- `score = 0.6 × afinidade com o autor + 0.4 × exp(−horas / 24)`.
-- Dois fluxos intercalados: **afinidade** (autores com ao menos uma tag em comum, por score) e **descoberta** (autores sem nenhuma tag em comum, do mais recente ao mais antigo). A descoberta ocupa as posições 4, 8, 12… Se um fluxo acaba, o outro preenche, então o feed não vira bolha nem fica vazio.
-- **Janela**: só os 500 posts visíveis mais recentes dos últimos 30 dias são ranqueados.
-- **Paginação estável**: o cursor é `<instante em microssegundos>:<offset>`. O instante é fixado na primeira página e vira o "agora" das seguintes, então a recência não se move entre páginas e posts criados depois não entram (aparecem ao recarregar). `next_cursor` é `NULL` na última página. Cursor com mais de 6 horas é recusado.
-- Os próprios posts não entram no feed.
+- **`feed_para_voce(cursor, limite)`**, a aba padrão. Dois fluxos, cada um do mais recente para o mais antigo: o **círculo** (quem eu sigo, e quem tem ao menos um gosto em comum comigo) e **fora do círculo** (o resto da instituição). A cada três posts do círculo entra um de fora, com o selo "Fora do seu círculo". Se um fluxo acaba, o outro preenche, então o feed não vira bolha nem fica vazio.
+- **`feed_seguindo(cursor, limite)`**: só quem eu sigo, do mais recente para o mais antigo, sem nada intercalado.
+- **Paginação por `(created_at, id)`**, sem offset: a página seguinte é "o que é mais antigo do que o último post que eu já vi". Post novo não empurra nada e post apagado não faz pular nenhum. Em "Para você" o cursor leva um par por fluxo e a cadência do 3:1.
+- As duas respeitam as mesmas regras: instituição, post não apagado nem ocultado, autor ativo e não banido, nenhum bloqueio em nenhuma direção. Os próprios posts não entram. Sem o aceite da versão vigente dos Termos a pessoa lê e não publica.
+- A aba escolhida é lembrada no aparelho (cookie de preferência `aba_do_inicio`, sem dado pessoal).
+- **O feed por score ficou guardado, sem uso**: `private.feed_por_score` (`0,6 × afinidade + 0,4 × exp(−horas / 24)`), que nenhum papel da API executa. Com pouco volume ele fazia a ordem parecer aleatória; fica para quando o volume justificar ranqueamento.
 
 O teto de 20 tags comuns por perfil é uma regra de segurança, não de produto: como a afinidade é normalizada pelas tags de quem lê, um perfil com todas as tags teria afinidade máxima com todo mundo e ficaria no topo de `pessoas_parecidas` da instituição inteira.
 
@@ -335,13 +344,13 @@ No GitHub, o workflow `.github/workflows/ci.yml` roda tudo isso a cada push, num
 | `010_cadastro` | Allowlist, formato `nome.RA`, e-mail banido, HMAC com o Vault, troca de e-mail |
 | `020_onboarding` | Sem onboarding não posta, não segue, não vê ninguém; menor de 18 tem a conta apagada |
 | `030_instituicao` | Outra instituição não lê posts, perfis nem tags (nem sendo staff) |
-| `040_tags_sensiveis` | Não-mutual não vê tag sensível, nem na afinidade, nem nas tags em comum; mutual vê |
+| `040_tags_sensiveis` | Só o dono e mutuals veem tag sensível. E ela nunca entra na afinidade nem nas tags em comum, para ninguém, nem entre mutuals |
 | `050_bloqueio` | Bloqueio esconde nas duas direções e apaga os follows; `meus_bloqueios` |
 | `060_posts` | `author_id` e `institution_id` alheios, `gif_id` com URL, edição e soft delete |
 | `070_rate_limit` | O 16º post da hora, o 201º follow, a 21ª denúncia |
 | `080_denuncias_moderacao` | Quem lê e resolve denúncias, cargos, auditoria, `user_metadata` ignorado |
 | `090_banimento` | Banido some de feed, perfis e `pessoas_parecidas`; e-mail não se recadastra |
-| `100_feed` | Fórmula do score, intercalação 3:1, paginação estável |
+| `100_feed` | `pessoas_parecidas`; as duas abas do feed: ordem pela hora (a afinidade não reordena), 3:1 com os de fora, paginação por `(created_at, id)` com post novo e post apagado no meio, bloqueio, banimento, apagados, instituição, termos; o feed por score guardado e sem uso |
 | `110_storage` | Pasta por uid, bucket de entrada, ninguém escreve em `avatars`, pendente invisível, aprovado visível |
 | `120_privacidade` | Despeja tudo o que usuário, moderador e admin conseguem ler e procura e-mails, domínios, RAs e colunas da conta privada |
 | `130_excluir_conta` | A exclusão apaga tudo da pessoa e mantém só o HMAC de banimento e a auditoria |
