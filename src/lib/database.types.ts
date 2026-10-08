@@ -532,6 +532,11 @@ isOneToOne: false
 "conceder_conquista":
 { Args: { "p_conquista": string,"p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
+"configuracoes":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "atualizado_em": string,"chave": string,"valor": string
+            }[]
+                           },
 "consentir_tags_sensiveis":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
@@ -540,6 +545,9 @@ isOneToOne: false
                            },
 "definir_cargo":
 { Args: { "p_motivo": string,"p_papel": Database["public"]['Enums']["staff_role"],"p_user_id": string }; Returns: undefined
+                           },
+"definir_configuracao":
+{ Args: { "p_chave": string,"p_motivo": string,"p_valor": string }; Returns: undefined
                            },
 "denunciar_mensagem":
 { Args: { "p_detalhe"?: string,"p_mensagem": string,"p_motivo": Database["public"]['Enums']["report_reason"] }; Returns: string
@@ -646,7 +654,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "avatar_status": "sem_avatar"|"pendente"|"aprovado"|"recusado","moderation_action_type": "ocultar_post"|"restaurar_post"|"banir_usuario"|"desbanir_usuario"|"aprovar_avatar"|"recusar_avatar"|"resolver_denuncia"|"conceder_cargo"|"remover_cargo"|"resolver_pedido_tag"|"conceder_conquista","notification_type": "novo_seguidor"|"mutuo"|"avatar_aprovado"|"avatar_recusado"|"denuncia_analisada"|"termos_atualizados"|"conquista","report_reason": "spam"|"assedio"|"discurso_de_odio"|"conteudo_sexual"|"violencia_ou_ameaca"|"perfil_falso"|"menor_de_idade"|"exposicao_de_dados_pessoais"|"outro","report_status": "aberta"|"em_analise"|"resolvida"|"rejeitada","staff_role": "moderador"|"admin","tag_request_status": "pendente"|"aprovada"|"recusada"
+            "avatar_status": "sem_avatar"|"pendente"|"aprovado"|"recusado","moderation_action_type": "ocultar_post"|"restaurar_post"|"banir_usuario"|"desbanir_usuario"|"aprovar_avatar"|"recusar_avatar"|"resolver_denuncia"|"conceder_cargo"|"remover_cargo"|"resolver_pedido_tag"|"conceder_conquista"|"alterar_configuracao","notification_type": "novo_seguidor"|"mutuo"|"avatar_aprovado"|"avatar_recusado"|"denuncia_analisada"|"termos_atualizados"|"conquista"|"cargo_concedido","report_reason": "spam"|"assedio"|"discurso_de_odio"|"conteudo_sexual"|"violencia_ou_ameaca"|"perfil_falso"|"menor_de_idade"|"exposicao_de_dados_pessoais"|"outro","report_status": "aberta"|"em_analise"|"resolvida"|"rejeitada","staff_role": "moderador"|"admin","tag_request_status": "pendente"|"aprovada"|"recusada"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -762,7 +770,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "avatar_status": ["sem_avatar", "pendente", "aprovado", "recusado"],"moderation_action_type": ["ocultar_post", "restaurar_post", "banir_usuario", "desbanir_usuario", "aprovar_avatar", "recusar_avatar", "resolver_denuncia", "conceder_cargo", "remover_cargo", "resolver_pedido_tag", "conceder_conquista"],"notification_type": ["novo_seguidor", "mutuo", "avatar_aprovado", "avatar_recusado", "denuncia_analisada", "termos_atualizados", "conquista"],"report_reason": ["spam", "assedio", "discurso_de_odio", "conteudo_sexual", "violencia_ou_ameaca", "perfil_falso", "menor_de_idade", "exposicao_de_dados_pessoais", "outro"],"report_status": ["aberta", "em_analise", "resolvida", "rejeitada"],"staff_role": ["moderador", "admin"],"tag_request_status": ["pendente", "aprovada", "recusada"]
+            "avatar_status": ["sem_avatar", "pendente", "aprovado", "recusado"],"moderation_action_type": ["ocultar_post", "restaurar_post", "banir_usuario", "desbanir_usuario", "aprovar_avatar", "recusar_avatar", "resolver_denuncia", "conceder_cargo", "remover_cargo", "resolver_pedido_tag", "conceder_conquista", "alterar_configuracao"],"notification_type": ["novo_seguidor", "mutuo", "avatar_aprovado", "avatar_recusado", "denuncia_analisada", "termos_atualizados", "conquista", "cargo_concedido"],"report_reason": ["spam", "assedio", "discurso_de_odio", "conteudo_sexual", "violencia_ou_ameaca", "perfil_falso", "menor_de_idade", "exposicao_de_dados_pessoais", "outro"],"report_status": ["aberta", "em_analise", "resolvida", "rejeitada"],"staff_role": ["moderador", "admin"],"tag_request_status": ["pendente", "aprovada", "recusada"]
           }
         }
 } as const

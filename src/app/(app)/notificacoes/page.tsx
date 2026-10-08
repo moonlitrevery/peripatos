@@ -144,6 +144,18 @@ export default async function Notificacoes() {
                   </>
                 );
                 break;
+              case "cargo_concedido":
+                texto = (
+                  <>
+                    <strong className="block">Você entrou para a equipe do Peripatos</strong>
+                    Para começar, ative a verificação em duas etapas em{" "}
+                    <Link href="/moderacao" className={elo}>
+                      Moderação
+                    </Link>
+                    .
+                  </>
+                );
+                break;
               case "conquista":
                 figura =
                   g.conquista_emoji && g.conquista_cor ? (

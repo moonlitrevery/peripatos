@@ -11,7 +11,7 @@ import { z } from "zod";
 // em moderation_actions, na mesma transação. Chamar isto sem cargo devolve
 // "Sem permissão para esta ação".
 
-type Rpc = "ocultar_post" | "banir_usuario" | "moderar_avatar" | "resolver_denuncia";
+type Rpc = "ocultar_post" | "banir_usuario" | "moderar_avatar" | "resolver_denuncia" | "definir_cargo" | "remover_cargo";
 
 async function chamar(fn: Rpc, args: Record<string, unknown>): Promise<Resultado> {
   const supabase = await createClient();
@@ -54,4 +54,18 @@ export async function resolverDenuncia(reportId: unknown, status: unknown, nota:
   );
   if (!r.ok) return r.falha;
   return chamar("resolver_denuncia", { p_report_id: r.dado.id, p_status: r.dado.status, p_nota: r.dado.nota });
+}
+
+// Equipe: só a administração (com o segundo fator) passa pela RPC. Por aqui só
+// se nomeia para a moderação: o papel não vem da tela.
+export async function nomearModeracao(userId: unknown, motivo: unknown) {
+  const r = v.validar(z.object({ id: v.uuid, motivo: v.motivoDeModeracao }), { id: userId, motivo });
+  if (!r.ok) return r.falha;
+  return chamar("definir_cargo", { p_user_id: r.dado.id, p_papel: "moderador", p_motivo: r.dado.motivo });
+}
+
+export async function removerCargo(userId: unknown, motivo: unknown) {
+  const r = v.validar(z.object({ id: v.uuid, motivo: v.motivoDeModeracao }), { id: userId, motivo });
+  if (!r.ok) return r.falha;
+  return chamar("remover_cargo", { p_user_id: r.dado.id, p_motivo: r.dado.motivo });
 }
