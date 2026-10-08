@@ -402,7 +402,7 @@ select is(
     where n.user_id = tests.uid('koi2') and n.achievement_slug = 'koinonia'),
   jsonb_build_object(
     'user_id', tests.uid('koi2'), 'type', 'conquista', 'actor_id', null,
-    'achievement_slug', 'koinonia', 'read_at', null, 'pushed_at', null),
+    'achievement_slug', 'koinonia', 'read_at', null, 'pushed_at', null, 'post_id', null),
   'a notificação da Koinonia não aponta para ninguém'
 );
 select tests.login('koi2');

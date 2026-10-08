@@ -84,7 +84,7 @@ Mudar ou apagar a janela não tira a conquista de quem já ganhou.
 
 | Evento | Quem recebe | Como nasce |
 | --- | --- | --- |
-| Novo seguidor | quem foi seguido | trigger em `follows` |
+| Novo seguidor | quem foi seguido | trigger em `follows`. Se o follow veio de um post (`follows.via_post_id`), a notificação guarda o post e diz "te seguiu pelo seu post" |
 | Vocês viraram mútuos | os dois | trigger em `follows` |
 | Avatar aprovado / recusado | o dono da foto | trigger em `profiles` (pendente → aprovado/recusado) |
 | Denúncia analisada | quem denunciou | trigger em `reports` (resolvida ou rejeitada) |
@@ -100,6 +100,13 @@ Mudar ou apagar a janela não tira a conquista de quem já ganhou.
 - O mesmo aviso sobre a mesma pessoa não se repete em 7 dias (seguir, deixar
   de seguir e seguir de novo não gera outra notificação).
 - Mais de 60 dias: apagadas pelo job diário.
+- **Seguir pelo post** (`20261013000001_seguir_pelo_post.sql`): a origem é
+  opcional, tem de ser um post de quem está sendo seguido e que esteja no ar, e
+  nenhum papel da API lê `follows.via_post_id` (a leitura de `follows` é por
+  coluna). Só a pessoa seguida fica sabendo, pela aba de notificações, com até
+  80 caracteres do post. Quem veio por um post tem uma linha só dele, fora do
+  grupo "3 pessoas te seguiram". Post apagado ou ocultado: a notificação volta
+  a ser um novo seguidor comum, sem o trecho.
 
 ### Push por tipo
 

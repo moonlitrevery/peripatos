@@ -95,13 +95,13 @@ isOneToOne: false
                   ]
                 },"follows": {
                   Row: {
-                    "created_at": string,"followee_id": string,"follower_id": string
+                    "created_at": string,"followee_id": string,"follower_id": string,"via_post_id": string | null
                   }
                   Insert: {
-                    "created_at"?: string,"followee_id": string,"follower_id"?: string
+                    "created_at"?: string,"followee_id": string,"follower_id"?: string,"via_post_id"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"followee_id"?: string,"follower_id"?: string
+                    "created_at"?: string,"followee_id"?: string,"follower_id"?: string,"via_post_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -115,6 +115,12 @@ isOneToOne: false
       columns: ["follower_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "follows_via_post_id_fkey"
+      columns: ["via_post_id"]
+isOneToOne: false
+      referencedRelation: "posts"
       referencedColumns: ["id"]
     }
                   ]
@@ -201,13 +207,13 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "achievement_slug": string | null,"actor_id": string | null,"created_at": string,"id": string,"pushed_at": string | null,"read_at": string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
+                    "achievement_slug": string | null,"actor_id": string | null,"created_at": string,"id": string,"post_id": string | null,"pushed_at": string | null,"read_at": string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
                   }
                   Insert: {
-                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"pushed_at"?: string | null,"read_at"?: string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
+                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"post_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
                   }
                   Update: {
-                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"pushed_at"?: string | null,"read_at"?: string | null,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string
+                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"post_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -221,6 +227,12 @@ isOneToOne: false
       columns: ["actor_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_post_id_fkey"
+      columns: ["post_id"]
+isOneToOne: false
+      referencedRelation: "posts"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "notifications_user_id_fkey"
@@ -576,7 +588,7 @@ isOneToOne: false
                            },
 "minhas_notificacoes":
 { Args: Record<PropertyKey, never>; Returns: {
-              "conquista_cor": string,"conquista_emoji": string,"conquista_emoji_rotulo": string,"conquista_nome": string,"conquista_slug": string,"grupo": string,"lida": boolean,"pessoas": Json,"quantidade": number,"tipo": Database["public"]['Enums']["notification_type"],"ultima_em": string
+              "conquista_cor": string,"conquista_emoji": string,"conquista_emoji_rotulo": string,"conquista_nome": string,"conquista_slug": string,"grupo": string,"lida": boolean,"pelo_post": boolean,"pessoas": Json,"post_trecho": string,"quantidade": number,"tipo": Database["public"]['Enums']["notification_type"],"ultima_em": string
             }[]
                            },
 "moderar_avatar":

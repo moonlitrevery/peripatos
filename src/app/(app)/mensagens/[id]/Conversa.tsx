@@ -13,6 +13,12 @@ import { avisarLeitura, useEventosDeMensagem, type Evento } from "@/lib/tempo-re
 
 const LIMITE = 1000; // o mesmo CHECK da coluna messages.body
 
+// Computador, e não aparelho de toque: o ponteiro principal é preciso e passa
+// por cima das coisas. Um notebook com tela de toque continua sendo
+// computador; um celular com teclado bluetooth continua sendo celular.
+const TECLADO_FISICO = "(hover: hover) and (pointer: fine)";
+const temTecladoFisico = () => window.matchMedia(TECLADO_FISICO).matches;
+
 type Props = {
   conversaId: string;
   uid: string;
@@ -36,6 +42,9 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, iniciarEnvio] = useTransition();
+  // O estado acima só muda no próximo desenho: dois Enter seguidos chegariam
+  // aqui antes disso. A referência fecha a porta na hora.
+  const saindo = useRef(false);
   const [carregando, setCarregando] = useState(false);
   const fim = useRef<HTMLDivElement>(null);
 
@@ -86,10 +95,13 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
   const vazio = texto.trim() === "" && !gif;
 
   function enviar() {
-    if (vazio || texto.length > LIMITE) return;
+    if (vazio || texto.length > LIMITE || saindo.current) return;
+    saindo.current = true;
     setErro(null);
     iniciarEnvio(async () => {
-      const r = await enviarMensagem(conversaId, texto, gif ? { id: gif.id, alt: gif.titulo } : null);
+      const r = await enviarMensagem(conversaId, texto, gif ? { id: gif.id, alt: gif.titulo } : null).finally(() => {
+        saindo.current = false;
+      });
       if (!r.ok) {
         setErro(r.erro);
         // pode ter fechado (deixaram de se seguir): busca o estado atual
@@ -182,13 +194,20 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                enviar();
-              }
+              if (e.key !== "Enter") return;
+              // Texto em composição (teclado japonês, chinês, autocorretor):
+              // este Enter confirma a palavra, não envia nem quebra a linha.
+              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+              // Ctrl+Enter / Cmd+Enter enviam em qualquer aparelho. Enter
+              // sozinho só envia com teclado de verdade: no toque ele quebra a
+              // linha e o envio fica no botão. Shift+Enter sempre quebra a linha.
+              const atalho = e.metaKey || e.ctrlKey;
+              if (!atalho && (e.shiftKey || e.altKey || !temTecladoFisico())) return;
+              e.preventDefault();
+              enviar();
             }}
             placeholder={`Mensagem para ${nomeDoOutro}`}
-            aria-describedby="nova-mensagem-contador"
+            aria-describedby="nova-mensagem-contador nova-mensagem-dica"
             className="placeholder:text-tinta-2 w-full resize-none bg-transparent text-base"
           />
           {gif && (
@@ -209,6 +228,10 @@ export function Conversa({ conversaId, uid, nomeDoOutro, iniciais, haMaisInicial
             <button type="button" className="btn btn-qui btn-peq" onClick={() => setSeletorAberto(true)}>
               GIF
             </button>
+            {/* Só aparece onde o Enter envia (a mesma consulta de mídia, no CSS). */}
+            <span id="nova-mensagem-dica" className="so-teclado text-tinta-2 text-[0.8125rem]">
+              Enter envia · Shift+Enter quebra a linha
+            </span>
             <span
               id="nova-mensagem-contador"
               className={`ml-auto text-[0.8125rem] tabular-nums ${texto.length >= LIMITE ? "text-perigo font-semibold" : "text-tinta-2"}`}

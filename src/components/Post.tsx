@@ -5,9 +5,9 @@ import { Gif } from "@/components/Gif";
 import type { ItemFeed } from "@/lib/feed";
 import { haQuantoTempo } from "@/lib/tempo";
 
-// `menu` é o botão de mais ações (os três pontos), no canto do cabeçalho;
-// `acoes` fica no rodapé.
-export function Post({ item, acoes, menu }: { item: ItemFeed; acoes?: ReactNode; menu?: ReactNode }) {
+// No canto do cabeçalho: `seguir` é o botão de seguir o autor a partir deste
+// post e `menu` é o de mais ações (os três pontos). `acoes` fica no rodapé.
+export function Post({ item, acoes, seguir, menu }: { item: ItemFeed; acoes?: ReactNode; seguir?: ReactNode; menu?: ReactNode }) {
   return (
     <article className="cartao flex flex-col gap-3" aria-label={`Post de ${item.nome}`}>
       {item.origem === "descoberta" && (
@@ -24,6 +24,7 @@ export function Post({ item, acoes, menu }: { item: ItemFeed; acoes?: ReactNode;
             {item.editado && " · editado"}
           </p>
         </div>
+        {seguir}
         {menu}
       </header>
       {item.corpo && <p className="break-words whitespace-pre-wrap">{item.corpo}</p>}

@@ -233,6 +233,7 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
                     criadoEm: p.created_at,
                     editado: p.edited_at !== null,
                     origem: "afinidade",
+                    seguindo,
                   }}
                   menu={ehMeu ? undefined : <MenuDoPost id={p.id} nome={nome} />}
                 />

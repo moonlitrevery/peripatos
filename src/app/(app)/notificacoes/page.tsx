@@ -86,8 +86,19 @@ export default async function Notificacoes() {
               }
               case "novo_seguidor":
                 figura = <span className="flex -space-x-2">{g.pessoas.map((p) => <span key={p.id}>{avatar(p, 32)}</span>)}</span>;
-                texto =
-                  g.quantidade === 1 ? (
+                // Só quem foi seguido lê isto: o trecho é de um post dele mesmo.
+                texto = g.pelo_post ? (
+                  <>
+                    <Nomes pessoas={g.pessoas} total={1} /> te seguiu pelo seu post
+                    {g.post_trecho ? (
+                      <>
+                        : <q className="text-tinta-2">{g.post_trecho}</q>
+                      </>
+                    ) : (
+                      "."
+                    )}
+                  </>
+                ) : g.quantidade === 1 ? (
                     <>
                       <Nomes pessoas={g.pessoas} total={1} /> começou a seguir você.
                     </>

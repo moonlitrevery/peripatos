@@ -177,6 +177,13 @@ h1, h2, h3 {
   50% { opacity: 0.55; }
 }
 
+/* O que só faz sentido com teclado de verdade (a dica "Enter envia"). A mesma
+   consulta decide, em Conversa.tsx, se o Enter envia. */
+.so-teclado { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .so-teclado { display: inline; }
+}
+
 /* Hover em tudo o que é clicável. Só onde existe ponteiro de verdade: no
    toque, o hover "gruda" depois do toque e confunde. */
 @media (hover: hover) {
