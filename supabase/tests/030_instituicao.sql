@@ -44,7 +44,7 @@ select is(
   'pessoas_parecidas não traz gente de outra instituição (mesmo com tag em comum)'
 );
 select is(
-  (select count(*) from public.feed(null, 50) where author_id = tests.uid('ana')), 0::bigint,
+  (select count(*) from public.feed_para_voce(null, 50) where author_id = tests.uid('ana')), 0::bigint,
   'feed não traz posts de outra instituição'
 );
 select throws_ok(

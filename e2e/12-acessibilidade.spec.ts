@@ -80,7 +80,10 @@ for (const tema of ["light", "dark"] as const) {
     await examinar(page, "/ (seletor de GIF)", achados);
     await page.keyboard.press("Escape");
     await page.goto("/u/caue");
-    await page.getByRole("button", { name: /Denunciar/ }).first().click();
+    await page.getByRole("button", { name: "Mais ações para Cauê" }).click();
+    await expect(page.getByRole("menu")).toBeVisible();
+    await examinar(page, "/u/caue (menu de mais ações)", achados);
+    await page.getByRole("menuitem", { name: "Denunciar" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await examinar(page, "/u/caue (denúncia)", achados);
     await logado.close();

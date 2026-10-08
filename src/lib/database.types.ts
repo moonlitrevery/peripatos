@@ -538,9 +538,14 @@ isOneToOne: false
 "excluir_conta":
 { Args: { "p_confirmacao": string }; Returns: undefined
                            },
-"feed":
+"feed_para_voce":
 { Args: { "p_cursor"?: string,"p_limite"?: number }; Returns: {
-              "afinidade": number,"author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"score": number,"username": string
+              "author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"username": string
+            }[]
+                           },
+"feed_seguindo":
+{ Args: { "p_cursor"?: string,"p_limite"?: number }; Returns: {
+              "author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"username": string
             }[]
                            },
 "marcar_conversa_lida":

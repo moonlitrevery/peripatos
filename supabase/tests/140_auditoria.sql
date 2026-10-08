@@ -241,7 +241,7 @@ select throws_ok(
 );
 select tests.login('ana');
 select is(
-  (select gif_alt from public.feed(null, 50) where gif_id = 'abc123'),
+  (select gif_alt from public.feed_para_voce(null, 50) where gif_id = 'abc123'),
   'Gato comemorando',
   'o feed devolve o texto alternativo do GIF'
 );

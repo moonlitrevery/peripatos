@@ -48,9 +48,24 @@ export async function proxy(request: NextRequest) {
 
   // getUser() valida o token no servidor de Auth. getSession() só leria o
   // cookie, que o próprio usuário controla.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  //
+  // O estado da conta (onboarding, aceite dos Termos) é pedido AO MESMO TEMPO,
+  // e não depois: são duas idas ao Supabase que não dependem uma da outra, e
+  // em fila cada navegação esperava as duas. Não é um atalho na validação: a
+  // RPC roda com o mesmo token, que o banco confere por conta própria, e o
+  // resultado só é usado se o getUser() confirmar a sessão. Sem cookie de
+  // sessão (visitante) nada é pedido.
+  const temSessao = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+  const paraPublica = ehPublica(request.nextUrl.pathname);
+  const [
+    {
+      data: { user },
+    },
+    statusDaConta,
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    temSessao && !paraPublica ? supabase.rpc("conta_status") : Promise.resolve({ data: null, error: null }),
+  ]);
 
   const caminho = request.nextUrl.pathname;
 
@@ -72,8 +87,9 @@ export async function proxy(request: NextRequest) {
   if (ehPublica(caminho)) return comCsp(response);
 
   // Uma chamada só diz se o onboarding terminou e se a pessoa aceitou a
-  // versão vigente dos Termos.
-  const { data: status } = await supabase.rpc("conta_status");
+  // versão vigente dos Termos. Se a que saiu junto com o getUser() falhou (o
+  // token estava vencido e foi renovado no meio), pede de novo, já com o novo.
+  const status = statusDaConta.error || statusDaConta.data === null ? (await supabase.rpc("conta_status")).data : statusDaConta.data;
   const conta = status as { onboarding_completo?: boolean; termos_em_dia?: boolean } | null;
 
   const completo = conta?.onboarding_completo === true;

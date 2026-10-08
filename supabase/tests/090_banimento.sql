@@ -13,7 +13,7 @@ select tests.mk_post('bia', 'post da bia', interval '1 hour');
 -- antes
 select tests.login('ana');
 select is((select count(*) from public.profiles where id = tests.uid('bia')), 1::bigint, 'antes: perfil visível');
-select is((select count(*) from public.feed(null, 50) where author_id = tests.uid('bia')), 1::bigint, 'antes: aparece no feed');
+select is((select count(*) from public.feed_para_voce(null, 50) where author_id = tests.uid('bia')), 1::bigint, 'antes: aparece no feed');
 select is(
   (select count(*) from public.pessoas_parecidas(50) where user_id = tests.uid('bia')), 1::bigint,
   'antes: aparece em pessoas_parecidas'
@@ -56,7 +56,7 @@ select tests.login('ana');
 select is((select count(*) from public.profiles where id = tests.uid('bia')), 0::bigint, 'banida some dos perfis');
 select is((select count(*) from public.posts where author_id = tests.uid('bia')), 0::bigint, 'os posts da banida somem');
 select is((select count(*) from public.profile_tags where user_id = tests.uid('bia')), 0::bigint, 'as tags da banida somem');
-select is((select count(*) from public.feed(null, 50) where author_id = tests.uid('bia')), 0::bigint, 'banida some do feed');
+select is((select count(*) from public.feed_para_voce(null, 50) where author_id = tests.uid('bia')), 0::bigint, 'banida some do feed');
 select is(
   (select count(*) from public.pessoas_parecidas(50) where user_id = tests.uid('bia')), 0::bigint,
   'banida some de pessoas_parecidas'

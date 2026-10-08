@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { contarNaoLidas } from "@/app/acoes/mensagens";
 import { contarNotificacoes } from "@/app/acoes/notificacoes";
+import { Marca } from "@/components/Marca";
 import { useAoLer, useAvisoDeNotificacao, useEventosDeMensagem } from "@/lib/tempo-real";
 
 const ICONES = {
@@ -23,8 +24,10 @@ function Icone({ d }: { d: string }) {
   );
 }
 
+// Celular: abas embaixo. Tablet (md): barra lateral estreita, ícone sobre o
+// rótulo. Desktop (lg): barra lateral larga, ícone ao lado do rótulo.
 const base =
-  "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] font-semibold md:flex-row md:gap-2 md:text-sm";
+  "aba-nav flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] font-semibold md:min-h-16 md:flex-none md:rounded-2xl md:py-2 lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-4 lg:text-base";
 
 type Props = { uid: string; naoLidasIniciais: number; notificacoesIniciais: number };
 
@@ -87,17 +90,21 @@ export function Navegacao({ uid, naoLidasIniciais, notificacoesIniciais }: Props
   return (
     <nav
       aria-label="Principal"
-      className="bg-papel border-linha fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:border-t-0 md:border-b md:pb-0"
+      className="bg-papel border-linha fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] md:inset-y-0 md:right-auto md:left-0 md:flex md:w-24 md:flex-col md:gap-6 md:border-t-0 md:border-r md:px-2 md:py-6 md:pb-6 lg:w-60 lg:px-4"
     >
-      <ul className="mx-auto flex max-w-xl">
+      <Link href="/" aria-label="Peripatos, ir para o Início" className="hidden items-center justify-center gap-3 md:flex lg:justify-start lg:px-4">
+        <Marca tamanho={26} />
+        <span className="font-display hidden text-xl font-bold lg:inline">Peripatos</span>
+      </Link>
+      <ul className="mx-auto flex max-w-xl md:mx-0 md:max-w-none md:flex-col md:gap-1">
         {abas.map((aba) => (
-          <li key={aba.rotulo} className="flex flex-1">
+          <li key={aba.rotulo} className="flex flex-1 md:flex-none md:flex-col">
             <Link
               href={aba.href}
               aria-current={aba.ativa ? "page" : undefined}
               className={`${base} relative ${
                 aba.ativa
-                  ? "text-petroleo shadow-[inset_0_3px_0_var(--petroleo)] md:shadow-[inset_0_-3px_0_var(--petroleo)]"
+                  ? "text-petroleo shadow-[inset_0_3px_0_var(--petroleo)] md:bg-[color-mix(in_srgb,var(--petroleo)_12%,transparent)] md:shadow-none"
                   : "text-tinta-2"
               }`}
             >

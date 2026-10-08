@@ -88,7 +88,13 @@ export const gifAlt = z
   .transform((s) => s.replace(/[\u0000-\u001F\u007F]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 200))
   .transform((s) => (s === "" ? null : s));
 
-export const cursorDoFeed = z.string().regex(/^[0-9]{1,18}:[0-9]{1,4}$/, "Recarregue o Início.");
+// (created_at, id) do último post visto: um par na aba Seguindo, dois pares e
+// a cadência na aba Para você. O banco confere de novo.
+export const cursorDoFeed = z
+  .string()
+  .regex(/^[0-9]{1,18}_[0-9a-f-]{36}(_[0-9]{1,18}_[0-9a-f-]{36}_[0-3])?$/, "Recarregue o Início.");
+
+export const abaDoFeed = z.enum(["para-voce", "seguindo"], "Recarregue o Início.");
 
 export const motivoDeDenuncia = z.enum(
   [

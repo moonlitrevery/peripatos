@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { falha, mensagemDeErro, ok, type Resultado } from "@/lib/erros";
+import type { AbaDoFeed } from "@/lib/aba-do-inicio";
 import { paginaDoFeed, type ItemFeed } from "@/lib/feed";
 import { createClient } from "@/lib/supabase/server";
 import * as v from "@/lib/validacao";
@@ -21,12 +22,20 @@ async function sessao() {
 
 const SEM_SESSAO = "Sua sessão expirou. Entre de novo.";
 
-export async function maisFeed(cursorBruto: unknown): Promise<Resultado<{ itens: ItemFeed[]; proximo: string | null }>> {
-  const c = v.validar(v.cursorDoFeed, cursorBruto);
+// Uma página de uma aba do Início: a primeira (cursor nulo, ao trocar de aba)
+// ou a seguinte.
+export async function maisFeed(
+  abaBruta: unknown,
+  cursorBruto: unknown,
+): Promise<Resultado<{ itens: ItemFeed[]; proximo: string | null }>> {
+  const a = v.validar(v.abaDoFeed, abaBruta);
+  if (!a.ok) return a.falha;
+  const c = v.validar(v.cursorDoFeed.nullable(), cursorBruto);
   if (!c.ok) return c.falha;
+  const aba: AbaDoFeed = a.dado;
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
-  const r = await paginaDoFeed(supabase, c.dado);
+  const r = await paginaDoFeed(supabase, aba, c.dado);
   if (r.erro) return falha(mensagemDeErro(r.erro));
   return ok({ itens: r.itens, proximo: r.proximo });
 }
