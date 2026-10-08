@@ -7,25 +7,48 @@ import { bloquear, removerSeguidor } from "@/app/acoes/social";
 import { BotaoSeguir } from "@/components/BotaoSeguir";
 import { Denunciar } from "@/components/Denunciar";
 import { Dialogo } from "@/components/Dialogo";
+import { MenuDeAcoes, type ItemDoMenu } from "@/components/MenuDeAcoes";
 
 type Props = { alvoId: string; nome: string; seguindo: boolean; segueVoce: boolean };
 
+// Seguir e Mensagem são as ações principais e ficam à vista. O que é raro ou
+// destrutivo (remover dos seguidores, denunciar, bloquear) vai para o menu de
+// mais ações.
 export function AcoesDoPerfil({ alvoId, nome, seguindo, segueVoce }: Props) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
+  const [denunciando, setDenunciando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
+
+  const itens: ItemDoMenu[] = [
+    ...(segueVoce
+      ? [
+          {
+            rotulo: "Remover dos seus seguidores",
+            aoEscolher: () =>
+              iniciar(async () => {
+                const r = await removerSeguidor(alvoId);
+                if (r.ok) router.refresh();
+                else setErro(r.erro);
+              }),
+          },
+        ]
+      : []),
+    { rotulo: "Denunciar", aoEscolher: () => setDenunciando(true) },
+    { rotulo: "Bloquear", perigo: true, aoEscolher: () => setConfirmando(true) },
+  ];
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start gap-2">
-        <BotaoSeguir alvoId={alvoId} nome={nome} seguindoInicial={seguindo} />
+        <BotaoSeguir alvoId={alvoId} nome={nome} seguindoInicial={seguindo} grande />
         {/* Só aparece para mútuos. Esconder é conforto: quem tentar sem ser
             mútuo recebe a recusa do banco. */}
         {seguindo && segueVoce && (
           <button
             type="button"
-            className="btn btn-sec btn-peq"
+            className="btn btn-sec"
             disabled={pendente}
             onClick={() =>
               iniciar(async () => {
@@ -37,27 +60,9 @@ export function AcoesDoPerfil({ alvoId, nome, seguindo, segueVoce }: Props) {
             Mensagem
           </button>
         )}
-        {segueVoce && (
-          <button
-            type="button"
-            className="btn btn-qui btn-peq"
-            disabled={pendente}
-            onClick={() =>
-              iniciar(async () => {
-                const r = await removerSeguidor(alvoId);
-                if (r.ok) router.refresh();
-                else setErro(r.erro);
-              })
-            }
-          >
-            Remover dos seus seguidores
-          </button>
-        )}
-        <Denunciar alvo={{ perfilId: alvoId }} />
-        <button type="button" className="btn btn-per btn-peq" onClick={() => setConfirmando(true)}>
-          Bloquear
-        </button>
+        <MenuDeAcoes rotulo={`Mais ações para ${nome}`} itens={itens} />
       </div>
+      <Denunciar alvo={{ perfilId: alvoId }} controle={{ aberto: denunciando, aoFechar: () => setDenunciando(false) }} />
       {erro && (
         <p role="alert" className="erro">
           {erro}

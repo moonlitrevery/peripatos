@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assinarAvatares } from "@/lib/avatares";
+import type { AbaDoFeed } from "@/lib/aba-do-inicio";
 import type { Database } from "@/lib/database.types";
 
 export type ItemFeed = {
@@ -16,16 +17,21 @@ export type ItemFeed = {
   gifAlt: string | null;
   criadoEm: string;
   editado: boolean;
-  /** "descoberta" = autor sem nenhum gosto em comum; "proprio" = acabou de publicar. */
+  /** "descoberta" = fora do círculo (não sigo e não temos gosto em comum); "proprio" = acabou de publicar. */
   origem: "afinidade" | "descoberta" | "proprio";
+  /** Publicado na tela, ainda esperando a resposta do servidor. */
+  enviando?: boolean;
 };
+
+
 
 export const TAMANHO_DA_PAGINA = 15;
 
-// Uma página do feed, direto da RPC. A ordenação, a mistura 3:1 e todas as
-// regras de visibilidade são do banco; aqui só se assina a URL dos avatares.
-export async function paginaDoFeed(supabase: SupabaseClient<Database>, cursor: string | null) {
-  const { data, error } = await supabase.rpc("feed", {
+// Uma página de uma das abas do Início, direto da RPC. Quem aparece, a ordem
+// (a hora), a mistura 3:1 da aba Para você e todas as regras de visibilidade
+// são do banco; aqui só se assina a URL dos avatares.
+export async function paginaDoFeed(supabase: SupabaseClient<Database>, aba: AbaDoFeed, cursor: string | null) {
+  const { data, error } = await supabase.rpc(aba === "seguindo" ? "feed_seguindo" : "feed_para_voce", {
     p_cursor: cursor ?? undefined,
     p_limite: TAMANHO_DA_PAGINA,
   });

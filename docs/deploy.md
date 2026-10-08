@@ -269,7 +269,39 @@ Regras:
 - As `NEXT_PUBLIC_` são gravadas no build. Mudou uma, faça *Redeploy*.
 - Deixe *Preview* sem variáveis: um deploy de preview com as de produção seria um segundo app escrevendo no banco real.
 
+### Região das funções: São Paulo (`gru1`)
+
+O `vercel.json` da raiz fixa as funções do app em **`gru1` (São Paulo)**, a mesma região do Supabase (passo 1). Não há nada para clicar: vale a partir do próximo deploy.
+
+Por que importa: toda página logada é montada no servidor, e para montá-la o servidor vai ao Supabase de duas a quatro vezes, uma depois da outra. O padrão do Vercel é rodar as funções em `iad1` (Washington). De lá até São Paulo cada ida e volta custa algo como 120 a 150 ms; de `gru1`, poucos milissegundos. Com três idas em fila, são uns 400 ms a menos em cada toque, sem mudar uma linha do app. É o maior ganho de desempenho disponível (os números medidos estão em `docs/desempenho.md`).
+
+- [ ] Depois do deploy, confira em *Project → Settings → Functions → Function Region* que aparece **São Paulo, Brazil (South America) – gru1**. Se o painel mostrar outra região, o `vercel.json` não foi lido (ele precisa estar na raiz do repositório e no branch de produção).
+- [ ] Confira num deploy de verdade: em *Deployments → (o deploy) → Functions*, a coluna de região mostra `gru1`. Ou, no navegador, o cabeçalho de resposta `x-vercel-id` de qualquer página começa pela região de borda e termina com `gru1::…`.
+- Se um dia o Supabase mudar de região, mude aqui junto: função e banco em regiões diferentes devolvem a latência.
+- O plano Hobby aceita uma região só por projeto, e `gru1` está disponível nele.
+
 - [ ] Faça o deploy e anote o endereço (`https://<projeto>.vercel.app` ou o domínio próprio).
+
+### Chaves de assinatura do JWT (assimétricas)
+
+As páginas do app conferem a sessão com `getClaims()` (`src/lib/sessao.ts`). Com **chave de assinatura assimétrica** (ES256) a conferência é feita no próprio servidor do app, pela assinatura do token, e economiza uma ida ao Auth em cada navegação. Com o **segredo simétrico antigo** (HS256, "Legacy JWT secret") o `getClaims()` não tem como conferir sozinho e chama o Auth, igual ao `getUser()`: **continua correto e seguro, só não traz ganho nenhum**. Não há nada no app para mudar num caso ou no outro.
+
+**Situação em 08/10/2026.** O endereço público das chaves do projeto de produção (`https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`) devolve **uma chave ES256**. Num projeto que só tem o segredo antigo essa lista vem vazia, então o projeto **tem** uma chave assimétrica. O que não dá para ver de fora é se ela é a chave **em uso** ou se está só **de reserva** (*standby*): as duas aparecem nessa lista. Como ninguém criou chave à mão neste projeto, o esperado é que ela seja a em uso (é o padrão dos projetos novos), mas confira:
+
+- [ ] **[painel]** *Project Settings → JWT Keys* (ou *Authentication → Signing Keys*). Em **Current key** deve aparecer **ECC (P-256)**. Se for isso, está pronto: o `getClaims()` já confere localmente.
+- [ ] Outro jeito, sem painel: entre no app em produção, abra as ferramentas do navegador, copie o valor do cookie `sb-<ref>-auth-token` (é um JSON; pegue o `access_token`) e decodifique **só o cabeçalho** (a primeira das três partes, em base64). `"alg":"ES256"` com um `kid` = assimétrica em uso. `"alg":"HS256"` = ainda o segredo antigo. Não cole o token em site nenhum: `echo '<primeira parte>' | base64 -d` basta.
+
+**Se a chave em uso ainda for a Legacy (HS256), como migrar:**
+
+1. *JWT Keys → Create standby key* (se já não houver uma), tipo **ECC (P-256)**. Ela passa a ser publicada no endereço das chaves, mas ainda não assina nada.
+2. Espere uns 20 minutos, para todo servidor que guarda essa lista em memória pegar a chave nova.
+3. *Rotate keys*. A partir daqui os tokens novos saem com ES256. **Ninguém é deslogado**: os tokens antigos continuam valendo até expirarem (1 hora), porque a chave anterior fica como "previously used".
+4. Rode `pnpm verificar:deploy` e o teste de fumaça (passo 13): entrar, postar, abrir uma conversa.
+5. Depois de pelo menos 1 hora e meia (a validade do token mais a folga), *Revoke* na chave antiga. Não revogue antes: quem ainda estiver com token assinado por ela cai.
+
+O que **não** muda com a rotação: as chaves `anon`/`publishable` e `service_role` do projeto (são as API keys, outra coisa), as variáveis do Vercel e as Edge Functions. A `processar-avatar` usa `verify_jwt = true`, que o gateway do Supabase confere com as chaves novas sozinho.
+
+Depois de migrar, cada servidor do app busca a lista de chaves uma vez e guarda em memória por alguns minutos; a primeira navegação de um servidor recém-acordado faz essa ida a mais, e as seguintes não.
 
 ## 11. Site URL — [painel]
 
@@ -345,6 +377,7 @@ O que fazer, em ordem de confiança:
 
 ## 15. Antes de abrir para outras pessoas
 
+- [ ] Marco 3: data do fim do beta (`fundador_ate`) e resposta do enigma definidas, `notificar-mensagem` publicada de novo e o job `peripatos-tarefas-diarias` ativo em `cron.job`. Passo a passo em `docs/conquistas.md`.
 - [ ] `/termos` e `/privacidade` revisados (hoje são rascunhos, marcados como tal) e o e-mail de contato trocado.
 - [ ] Chave de produção do Giphy pedida, se o uso passar do limite da de desenvolvimento.
 - [ ] Limites do passo 8 revistos para o tamanho esperado do lançamento.
@@ -358,7 +391,7 @@ O que fazer, em ordem de confiança:
 | Mudou | Faça |
 | --- | --- |
 | Uma migration nova | **[comando]** backup (`scripts/backup-criptografado.sh`), `pnpm exec supabase db push --dry-run`, depois `db push`, depois `pnpm verificar:deploy` |
-| Os Termos ou a Política | Nova versão em `src/lib/legal.ts` (com a lista `MUDANCAS_DA_VERSAO` reescrita) **e** numa migration que troca `private.termos_versao_atual()`, na mesma entrega. A partir do `db push`, quem aceitou a versão anterior vê a tela de novo aceite e **não posta nem manda mensagem até aceitar**: faça o `db push` logo depois de o deploy do app terminar, nunca antes |
+| Os Termos ou a Política | Nova versão em `src/lib/legal.ts` (com a lista `MUDANCAS_DA_VERSAO` reescrita) **e** numa migration que insere a versão em `private.termos_versoes` (ver `docs/conquistas.md`), na mesma entrega. A partir do `db push`, quem aceitou a versão anterior vê a tela de novo aceite e **não posta nem manda mensagem até aceitar**: faça o `db push` logo depois de o deploy do app terminar, nunca antes |
 | A Edge Function | **[comando]** `pnpm exec supabase functions deploy processar-avatar` |
 | O app | merge em `main`; o Vercel faz o deploy |
 | App **e** migration na mesma entrega | merge em `main`, depois `git checkout main && git pull`, e só então o `db push`. Entre os dois há uma janela em que app e banco não combinam: faça em horário de pouco uso |

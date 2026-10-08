@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { concederConquista } from "@/app/acoes/conquistas";
 import { AcoesDoPerfil } from "@/components/AcoesDoPerfil";
 import { Avatar } from "@/components/Avatar";
+import { Cargo } from "@/components/Cargo";
+import { SeloDeConquista } from "@/components/Conquista";
 import { Post } from "@/components/Post";
+import { SeloMutuo } from "@/components/SeloMutuo";
 import { TagChip } from "@/components/TagChip";
 import { assinarAvatares } from "@/lib/avatares";
-import { exigirSessao } from "@/lib/sessao";
+import { COLUNAS_DA_CONQUISTA, deLinha as conquistaDeLinha } from "@/lib/conquistas";
+import { exigirSessao, meuCargo, nivelDaSessao } from "@/lib/sessao";
+import { AcaoComMotivo } from "../../moderacao/AcaoComMotivo";
 import { deLinha, fraseEmComum, type Tag } from "@/lib/tags";
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]">): Promise<Metadata> {
@@ -14,7 +20,6 @@ export async function generateMetadata({ params }: PageProps<"/u/[username]">): 
   return { title: `@${username}` };
 }
 
-const CARGOS = { admin: "Administração", moderador: "Moderação" } as const;
 const TAGS = "tags(id, slug, name, category, is_sensitive)";
 
 export default async function Perfil({ params }: PageProps<"/u/[username]">) {
@@ -38,13 +43,14 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
     supabase.from("follows").select("follower_id").eq("follower_id", de).eq("followee_id", para).limit(1);
   const ninguem = Promise.resolve({ data: [] as { follower_id: string }[] });
 
-  const [tags, sensiveis, minhas, minhasSens, euSigo, meSegue, cargo, posts, urls] = await Promise.all([
+  const [tags, sensiveis, minhas, euSigo, meSegue, cargo, posts, urls, conquistasDoPerfil, cargoDeQuemVe, nivel] = await Promise.all([
     supabase.from("profile_tags").select(TAGS).eq("user_id", perfil.id),
     // Tags sensíveis: a consulta é sempre feita; o banco só devolve linhas
     // para o dono e para mutuals. Aqui não existe "se for mutual, mostre".
     supabase.from("profile_sensitive_tags").select(TAGS).eq("user_id", perfil.id),
+    // Só os GOSTOS de quem olha entram na conta de "em comum". As tags
+    // sensíveis de quem olha nem são consultadas: não são gostos.
     supabase.from("profile_tags").select("tag_id").eq("user_id", user.id),
-    supabase.from("profile_sensitive_tags").select("tag_id").eq("user_id", user.id),
     ehMeu ? ninguem : segue(user.id, perfil.id),
     ehMeu ? ninguem : segue(perfil.id, user.id),
     supabase.from("staff_roles").select("role").eq("user_id", perfil.id).maybeSingle(),
@@ -55,10 +61,26 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
       .order("created_at", { ascending: false })
       .limit(30),
     assinarAvatares(supabase, [perfil.avatar_status === "aprovado" ? perfil.avatar_path : null]),
+    // Conquistas: o banco devolve as que a pessoa deixou à mostra (no próprio
+    // perfil, todas, com as ocultas marcadas).
+    supabase.from("user_achievements").select(`hidden, achievements(${COLUNAS_DA_CONQUISTA})`).eq("user_id", perfil.id),
+    meuCargo(),
+    nivelDaSessao(),
   ]);
 
-  const doPerfil: Tag[] = [...(tags.data ?? []), ...(sensiveis.data ?? [])].flatMap((l) => (l.tags ? [deLinha(l.tags)] : []));
-  const meus = new Set([...(minhas.data ?? []), ...(minhasSens.data ?? [])].map((l) => l.tag_id));
+  const conquistas = (conquistasDoPerfil.data ?? [])
+    .flatMap((l) => (l.achievements ? [{ ...conquistaDeLinha(l.achievements), oculta: l.hidden }] : []))
+    .sort((a, b) => a.posicao - b.posicao);
+  // Esconder o botão é conforto: a RPC recusa quem não é admin com o segundo
+  // fator, e registra a concessão em moderation_actions.
+  const podeConcederHeracles =
+    !ehMeu && cargoDeQuemVe === "admin" && nivel === "aal2" && !conquistas.some((c) => c.slug === "heracles");
+
+  const doPerfil: Tag[] = (tags.data ?? []).flatMap((l) => (l.tags ? [deLinha(l.tags)] : []));
+  // Orientação, gênero e religião ficam numa seção à parte ("Sobre"), sem
+  // âmbar e sem contagem: nunca são "em comum".
+  const sobre: Tag[] = (sensiveis.data ?? []).flatMap((l) => (l.tags ? [deLinha(l.tags)] : []));
+  const meus = new Set((minhas.data ?? []).map((l) => l.tag_id));
   const comuns = ehMeu ? [] : doPerfil.filter((t) => meus.has(t.id));
   const demais = ehMeu ? doPerfil : doPerfil.filter((t) => !meus.has(t.id));
 
@@ -77,22 +99,10 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
             <p className="text-tinta-2">@{perfil.username}</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 empty:hidden">
-          {cargo.data && (
-            <span className="bg-petroleo text-sobre-petroleo rounded-full px-3 py-1 text-[0.75rem] font-bold">
-              {CARGOS[cargo.data.role]}
-            </span>
-          )}
-          {seguindo && segueVoce && (
-            <span className="text-petroleo border-petroleo rounded-full border-[1.5px] px-3 py-1 text-[0.75rem] font-bold">
-              Vocês se seguem
-            </span>
-          )}
-          {!seguindo && segueVoce && (
-            <span className="border-linha text-tinta-2 rounded-full border px-3 py-1 text-[0.75rem] font-semibold">
-              Segue você
-            </span>
-          )}
+        <div className="flex flex-wrap items-center gap-3 empty:hidden">
+          {cargo.data && <Cargo papel={cargo.data.role} />}
+          {seguindo && segueVoce && <SeloMutuo />}
+          {!seguindo && segueVoce && <SeloMutuo tipo="segue-voce" />}
         </div>
         {perfil.bio && <p className="break-words whitespace-pre-wrap">{perfil.bio}</p>}
         {ehMeu ? (
@@ -130,14 +140,64 @@ export default async function Perfil({ params }: PageProps<"/u/[username]">) {
             ))}
           </ul>
         )}
-        {doPerfil.some((t) => t.sensivel) && (
+      </section>
+
+      {sobre.length > 0 && (
+        <section aria-labelledby="titulo-sobre" className="flex flex-col gap-3">
+          <h2 id="titulo-sobre" className="text-xl font-bold">
+            Sobre
+          </h2>
+          <ul className="flex flex-wrap gap-1.5">
+            {sobre.map((t) => (
+              <li key={t.id}>
+                <TagChip tag={t} neutra />
+              </li>
+            ))}
+          </ul>
           <p className="fino">
             {ehMeu
-              ? "As tags com cadeado só aparecem para quem você segue e que te segue de volta."
-              : "As tags com cadeado aparecem porque vocês se seguem."}
+              ? "Esta seção só aparece para quem você segue e que te segue de volta. Não conta como gosto em comum com ninguém."
+              : "Você vê esta seção porque vocês se seguem."}
           </p>
-        )}
-      </section>
+        </section>
+      )}
+
+      {(conquistas.length > 0 || ehMeu || podeConcederHeracles) && (
+        <section aria-labelledby="titulo-conquistas" className="flex flex-col gap-3">
+          <h2 id="titulo-conquistas" className="text-xl font-bold">
+            Conquistas
+          </h2>
+          {conquistas.length === 0 ? (
+            <p className="text-tinta-2">{ehMeu ? "Você ainda não tem nenhuma conquista." : "Nenhuma conquista à mostra."}</p>
+          ) : (
+            <ul className="flex flex-wrap gap-2" aria-label={ehMeu ? "Suas conquistas" : `Conquistas de ${nome}`}>
+              {conquistas.map((c) => (
+                <li key={c.slug}>
+                  <SeloDeConquista conquista={c} oculta={c.oculta} />
+                </li>
+              ))}
+            </ul>
+          )}
+          {ehMeu && (
+            <p className="fino">
+              As ocultas só você vê.{" "}
+              <Link href="/conquistas" className="text-petroleo font-semibold underline underline-offset-4">
+                Escolher o que aparece
+              </Link>
+            </p>
+          )}
+          {podeConcederHeracles && (
+            <div>
+              <AcaoComMotivo
+                rotulo="Conceder Héracles"
+                titulo={`Conceder Héracles a ${nome}`}
+                explicacao="Para quem reportou um bug que foi confirmado. A concessão é permanente e fica registrada."
+                acao={concederConquista.bind(null, perfil.id, "heracles")}
+              />
+            </div>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="titulo-posts" className="flex flex-col gap-3">
         <h2 id="titulo-posts" className="text-xl font-bold">

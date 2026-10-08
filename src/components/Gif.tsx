@@ -15,7 +15,12 @@ export function Gif({ id, alt }: { id: string; alt?: string | null }) {
       loading="lazy"
       decoding="async"
       referrerPolicy="no-referrer"
-      className="bg-papel-2 max-h-80 w-full rounded-2xl object-contain"
+      // O post guarda só o ID do GIF, então o tamanho dele só é conhecido
+      // quando a imagem chega. A moldura tem tamanho próprio desde o início
+      // (4:3, com teto de altura: no celular nunca passa de menos da metade
+      // da tela) e o GIF se encaixa dentro dela. Assim o que vem abaixo não
+      // pula de lugar quando o GIF carrega.
+      className="bg-papel-2 aspect-[4/3] max-h-[min(20rem,45svh)] w-full rounded-2xl object-contain"
     />
   );
 }

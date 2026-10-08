@@ -177,14 +177,16 @@ select bag_eq(
      where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute') $$,
   $$ values
        ('completar_onboarding'), ('conta_status'), ('excluir_conta'),
-       ('afinidade'), ('pessoas_parecidas'), ('feed'),
+       ('afinidade'), ('pessoas_parecidas'), ('feed_para_voce'), ('feed_seguindo'),
        ('apagar_post'), ('minhas_denuncias'), ('meus_bloqueios'),
        ('ocultar_post'), ('restaurar_post'), ('banir_usuario'), ('desbanir_usuario'),
        ('moderar_avatar'), ('resolver_denuncia'),
        ('definir_cargo'), ('remover_cargo'), ('resolver_pedido_tag'),
        ('consentir_tags_sensiveis'), ('revogar_tags_sensiveis'), ('registrar_busca_gif'),
        ('abrir_conversa'), ('minhas_conversas'), ('total_nao_lidas'), ('marcar_conversa_lida'),
-       ('denunciar_mensagem'), ('aceitar_termos') $$,
+       ('denunciar_mensagem'), ('aceitar_termos'),
+       ('minhas_notificacoes'), ('total_notificacoes_nao_lidas'), ('marcar_notificacoes_lidas'),
+       ('minhas_conquistas'), ('conceder_conquista'), ('responder_enigma') $$,
   'META: authenticated só executa as RPCs conhecidas de public'
 );
 

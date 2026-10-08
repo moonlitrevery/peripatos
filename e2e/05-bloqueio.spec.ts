@@ -7,10 +7,13 @@ const POST_DO_BETO = "Fechando time para o interclasses. Falta goleiro.";
 async function carregarOFeedInteiro(page: Page) {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Início" })).toBeVisible();
+  // O título já aparece no esqueleto da tela; espera o feed de verdade.
+  await expect(page.locator("[data-esqueleto]")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "O que mostrar no Início" })).toBeVisible();
   const fim = page.getByText("Você chegou ao fim. Volte mais tarde.");
   const mais = page.getByRole("button", { name: "Carregar mais" });
   for (let i = 0; i < 30 && !(await fim.isVisible()); i++) {
-    if (await mais.isEnabled().catch(() => false)) await mais.click().catch(() => {});
+    if ((await mais.count()) > 0 && (await mais.isEnabled().catch(() => false))) await mais.click().catch(() => {});
     await page.waitForTimeout(300);
   }
   await expect(fim).toBeVisible();
@@ -30,7 +33,8 @@ test("bloquear faz a pessoa e os posts dela sumirem, nos dois sentidos", async (
   await expect(beto.getByText(POST_DO_TOMAS)).toBeVisible();
 
   // Bloquear pede confirmação.
-  await beto.getByRole("button", { name: "Bloquear", exact: true }).click();
+  await beto.getByRole("button", { name: "Mais ações para Tomás" }).click();
+  await beto.getByRole("menuitem", { name: "Bloquear" }).click();
   const dialogo = beto.getByRole("dialog", { name: "Bloquear Tomás?" });
   await expect(dialogo).toBeVisible();
   await dialogo.getByRole("button", { name: "Bloquear", exact: true }).click();

@@ -161,7 +161,7 @@ select tests.logout();
 select is(
   (select termos_versao || '|' || (termos_aceitos_em > now() - interval '1 minute')::text
    from private.accounts where user_id = tests.uid('novo')),
-  '2026-10-08-rascunho|true',
+  '2026-10-09-rascunho|true',
   'a versão aceita e a data do aceite ficam registradas'
 );
 
@@ -241,7 +241,7 @@ select throws_ok(
 );
 select tests.login('ana');
 select is(
-  (select gif_alt from public.feed(null, 50) where gif_id = 'abc123'),
+  (select gif_alt from public.feed_para_voce(null, 50) where gif_id = 'abc123'),
   'Gato comemorando',
   'o feed devolve o texto alternativo do GIF'
 );

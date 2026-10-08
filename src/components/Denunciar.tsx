@@ -11,10 +11,16 @@ type Props = {
   /** Texto do botão que abre o diálogo. */
   rotulo?: string;
   className?: string;
+  /**
+   * Quando o diálogo é aberto por fora (um item de menu), quem usa controla
+   * o estado e o componente não desenha botão nenhum.
+   */
+  controle?: { aberto: boolean; aoFechar: () => void };
 };
 
-export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui btn-peq" }: Props) {
-  const [aberto, setAberto] = useState(false);
+export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui btn-peq", controle }: Props) {
+  const [abertoAqui, setAberto] = useState(false);
+  const aberto = controle ? controle.aberto : abertoAqui;
   const [motivo, setMotivo] = useState<MotivoDenuncia | "">("");
   const [detalhe, setDetalhe] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -27,6 +33,7 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
 
   function fechar() {
     setAberto(false);
+    controle?.aoFechar();
     setErro(null);
     if (enviada) {
       setEnviada(false);
@@ -37,9 +44,11 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
 
   return (
     <>
-      <button type="button" className={className} onClick={() => setAberto(true)}>
-        {rotulo}
-      </button>
+      {!controle && (
+        <button type="button" className={className} onClick={() => setAberto(true)}>
+          {rotulo}
+        </button>
+      )}
       <Dialogo aberto={aberto} aoFechar={fechar} titulo={`Denunciar ${oQue}`}>
         {enviada ? (
           <>

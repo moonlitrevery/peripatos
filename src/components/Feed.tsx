@@ -7,13 +7,23 @@ import { Denunciar } from "@/components/Denunciar";
 import { urlDoGif } from "@/components/Gif";
 import { Post } from "@/components/Post";
 import { SeletorDeGif } from "@/components/SeletorDeGif";
+import { lembrarAba, type AbaDoFeed } from "@/lib/aba-do-inicio";
 import type { ItemFeed } from "@/lib/feed";
 
 const LIMITE = 500; // o mesmo CHECK da coluna posts.body
 
 type Eu = { id: string; username: string; nome: string; avatarUrl: string | null; preset: number | null };
 
-export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; cursorInicial: string | null; eu: Eu }) {
+const ABAS: { id: AbaDoFeed; rotulo: string }[] = [
+  { id: "para-voce", rotulo: "Para você" },
+  { id: "seguindo", rotulo: "Seguindo" },
+];
+
+type Props = { abaInicial: AbaDoFeed; inicial: ItemFeed[]; cursorInicial: string | null; eu: Eu };
+
+export function Feed({ abaInicial, inicial, cursorInicial, eu }: Props) {
+  const [aba, setAba] = useState(abaInicial);
+  const [trocando, setTrocando] = useState(false);
   const [itens, setItens] = useState(inicial);
   const [cursor, setCursor] = useState(cursorInicial);
   const [texto, setTexto] = useState("");
@@ -27,44 +37,82 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
 
   const vazio = texto.trim() === "" && !gif;
 
+  // Otimista: o post aparece no topo e o formulário esvazia na hora do toque.
+  // Se o servidor recusar (limite de posts, termos, sessão), o post some da
+  // lista e o texto e o GIF voltam para o formulário, com o motivo.
   function enviar() {
-    if (vazio || texto.length > LIMITE) return;
+    if (vazio || texto.length > LIMITE || publicando) return;
     setErro(null);
+    const rascunho = { texto, gif };
+    const provisorio = `enviando-${Date.now()}`;
+    setItens((atual) => [
+      {
+        id: provisorio,
+        autorId: eu.id,
+        username: eu.username,
+        nome: eu.nome,
+        avatarUrl: eu.avatarUrl,
+        preset: eu.preset,
+        corpo: texto.trim(),
+        gifId: gif?.id ?? null,
+        gifAlt: gif?.titulo ?? null,
+        criadoEm: new Date().toISOString(),
+        editado: false,
+        origem: "proprio",
+        enviando: true,
+      },
+      ...atual,
+    ]);
+    setTexto("");
+    setGif(null);
     iniciarPublicacao(async () => {
-      const r = await publicar(texto, gif ? { id: gif.id, alt: gif.titulo } : null);
+      const r = await publicar(rascunho.texto, rascunho.gif ? { id: rascunho.gif.id, alt: rascunho.gif.titulo } : null);
       if (!r.ok) {
+        setItens((atual) => atual.filter((i) => i.id !== provisorio));
+        setTexto(rascunho.texto);
+        setGif(rascunho.gif);
         setErro(r.erro);
         return;
       }
-      // O feed do banco não traz os próprios posts; mostramos o que acabou de
-      // sair no topo para a pessoa ver que publicou.
-      setItens((atual) => [
-        {
-          id: r.dados.id,
-          autorId: eu.id,
-          username: eu.username,
-          nome: eu.nome,
-          avatarUrl: eu.avatarUrl,
-          preset: eu.preset,
-          corpo: texto.trim(),
-          gifId: gif?.id ?? null,
-          gifAlt: r.dados.gifAlt,
-          criadoEm: r.dados.criadoEm,
-          editado: false,
-          origem: "proprio",
-        },
-        ...atual,
-      ]);
-      setTexto("");
-      setGif(null);
+      // O feed do banco não traz os próprios posts: o que acabou de sair fica
+      // no topo, agora com o id e a hora de verdade.
+      setItens((atual) =>
+        atual.map((i) =>
+          i.id === provisorio ? { ...i, id: r.dados.id, criadoEm: r.dados.criadoEm, gifAlt: r.dados.gifAlt, enviando: false } : i,
+        ),
+      );
     });
+  }
+
+  // Trocar de aba: lembra a escolha neste aparelho (um cookie de preferência,
+  // para a próxima visita já abrir na aba certa) e busca a primeira página.
+  // Os posts que a pessoa acabou de publicar continuam no topo.
+  const pedido = useRef(0);
+  async function trocarDeAba(nova: AbaDoFeed) {
+    if (nova === aba) return;
+    lembrarAba(nova);
+    const meu = ++pedido.current;
+    setAba(nova);
+    setTrocando(true);
+    setErroLista(null);
+    const r = await maisFeed(nova, null);
+    if (meu !== pedido.current) return; // trocou de novo antes de chegar
+    if (r.ok) {
+      setItens((atual) => [...atual.filter((i) => i.origem === "proprio"), ...r.dados.itens]);
+      setCursor(r.dados.proximo);
+    } else {
+      setItens((atual) => atual.filter((i) => i.origem === "proprio"));
+      setCursor(null);
+      setErroLista(r.erro);
+    }
+    setTrocando(false);
   }
 
   const carregarMais = useCallback(async () => {
     if (!cursor || carregando) return;
     setCarregando(true);
     setErroLista(null);
-    const r = await maisFeed(cursor);
+    const r = await maisFeed(aba, cursor);
     if (r.ok) {
       setItens((atual) => {
         const vistos = new Set(atual.map((i) => i.id));
@@ -76,7 +124,7 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
       setCursor(null);
     }
     setCarregando(false);
-  }, [cursor, carregando]);
+  }, [aba, cursor, carregando]);
 
   // Scroll infinito: carrega a próxima página quando o fim da lista aparece.
   // O botão "Carregar mais" continua ali para quem navega por teclado.
@@ -143,23 +191,70 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
             <span className="sr-only"> caracteres</span>
           </span>
           <button type="submit" className="btn btn-pri btn-peq" disabled={vazio || publicando}>
-            {publicando ? "Publicando…" : "Publicar"}
+            Publicar
           </button>
         </div>
       </form>
 
       <SeletorDeGif aberto={seletorAberto} aoFechar={() => setSeletorAberto(false)} aoEscolher={setGif} />
 
-      {itens.length === 0 ? (
-        <section className="cartao flex flex-col items-start gap-3">
-          <h2 className="text-xl font-bold">Seu Início ainda está quieto</h2>
-          <p className="text-tinta-2">
-            Os posts de quem tem gostos parecidos com os seus aparecem aqui. Que tal ver quem gosta do que você gosta?
-          </p>
-          <Link href="/gente" className="btn btn-pri">
-            Conhecer gente
-          </Link>
-        </section>
+      {/* Duas abas. "Para você": quem eu sigo e gente da instituição, pela
+          hora, com um post de fora do círculo a cada quatro. "Seguindo": só
+          quem eu sigo, pela hora. */}
+      <div role="tablist" aria-label="O que mostrar no Início" className="border-linha flex border-b">
+        {ABAS.map((a, i) => (
+          <button
+            key={a.id}
+            type="button"
+            role="tab"
+            id={`aba-${a.id}`}
+            aria-selected={aba === a.id}
+            aria-controls="painel-do-feed"
+            tabIndex={aba === a.id ? 0 : -1}
+            className={`min-h-11 flex-1 cursor-pointer text-[0.9375rem] font-bold ${
+              aba === a.id ? "text-petroleo shadow-[inset_0_-3px_0_var(--petroleo)]" : "text-tinta-2"
+            }`}
+            onClick={() => void trocarDeAba(a.id)}
+            onKeyDown={(e) => {
+              // Padrão de abas: as setas andam entre elas e já selecionam.
+              if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+              e.preventDefault();
+              const outra = ABAS[(i + (e.key === "ArrowRight" ? 1 : ABAS.length - 1)) % ABAS.length]!;
+              document.getElementById(`aba-${outra.id}`)?.focus();
+              void trocarDeAba(outra.id);
+            }}
+          >
+            {a.rotulo}
+          </button>
+        ))}
+      </div>
+
+      <div id="painel-do-feed" role="tabpanel" aria-labelledby={`aba-${aba}`} aria-busy={trocando} className="flex flex-col gap-4">
+      {trocando ? (
+        <p role="status" className="text-tinta-2 py-6 text-center">
+          Carregando…
+        </p>
+      ) : itens.length === 0 ? (
+        aba === "seguindo" ? (
+          <section className="cartao flex flex-col items-start gap-3">
+            <h2 className="text-xl font-bold">Ninguém que você segue postou ainda</h2>
+            <p className="text-tinta-2">Aqui aparecem só os posts de quem você segue, do mais recente para o mais antigo.</p>
+            <Link href="/gente" className="btn btn-pri">
+              Encontrar gente para seguir
+            </Link>
+          </section>
+        ) : (
+          <section className="cartao flex flex-col items-start gap-3">
+            <h2 className="text-xl font-bold">Seu Início ainda está quieto</h2>
+            <p className="text-tinta-2">
+              Os posts de quem você segue e de quem tem gostos parecidos com os seus aparecem aqui. Que tal ver quem gosta
+              do que você gosta?
+            </p>
+            <Link href="/gente" className="btn btn-pri">
+              Conhecer gente
+            </Link>
+          </section>
+        )
       ) : (
         <ul className="flex flex-col gap-4" aria-label="Posts">
           {itens.map((item) => (
@@ -167,7 +262,11 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
               <Post
                 item={item}
                 acoes={
-                  item.autorId === eu.id ? (
+                  item.enviando ? (
+                    <span className="fino" role="status">
+                      Publicando…
+                    </span>
+                  ) : item.autorId === eu.id ? (
                     <ApagarPost id={item.id} aoApagar={() => remover(item.id)} />
                   ) : (
                     <Denunciar alvo={{ postId: item.id }} className="fino underline underline-offset-4" />
@@ -185,12 +284,13 @@ export function Feed({ inicial, cursorInicial, eu }: { inicial: ItemFeed[]; curs
         </p>
       )}
       <div ref={sentinela} />
-      {cursor && (
+      {cursor && !trocando && (
         <button type="button" className="btn btn-qui self-center" disabled={carregando} onClick={() => void carregarMais()}>
           {carregando ? "Carregando…" : "Carregar mais"}
         </button>
       )}
-      {!cursor && itens.length > 0 && <p className="fino text-center">Você chegou ao fim. Volte mais tarde.</p>}
+      {!cursor && !trocando && itens.length > 0 && <p className="fino text-center">Você chegou ao fim. Volte mais tarde.</p>}
+      </div>
     </div>
   );
 }

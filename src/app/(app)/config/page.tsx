@@ -9,15 +9,20 @@ export const metadata: Metadata = { title: "Configurações" };
 
 export default async function Config() {
   const { supabase, user } = await exigirSessao();
-  const perfil = await meuPerfil();
-
-  const [tags, comuns, sensiveis, bloqueios, status, cargo] = await Promise.all([
+  // Nada aqui depende do perfil: tudo sai junto, numa ida só.
+  const [perfil, tags, comuns, sensiveis, bloqueios, status, cargo, push] = await Promise.all([
+    meuPerfil(),
     supabase.from("tags").select("id, slug, name, category, is_sensitive").order("id"),
     supabase.from("profile_tags").select("tag_id").eq("user_id", user.id),
     supabase.from("profile_sensitive_tags").select("tag_id").eq("user_id", user.id),
     supabase.rpc("meus_bloqueios"),
     supabase.rpc("conta_status"),
     meuCargo(),
+    supabase
+      .from("push_preferences")
+      .select("mensagem, mutuo, novo_seguidor, conquista, avatar, denuncia, termos")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
   const conta = status.data as { sensiveis_consentido_em?: string | null } | null;
 
@@ -73,7 +78,12 @@ export default async function Config() {
         <h2 id="t-notificacoes" className="text-xl font-bold">
           Notificações
         </h2>
-        <Notificacoes />
+        <Notificacoes
+          // sem linha no banco valem os padrões: mensagens sim, o resto não
+          porTipo={
+            push.data ?? { mensagem: true, mutuo: false, novo_seguidor: false, conquista: false, avatar: false, denuncia: false, termos: false }
+          }
+        />
       </section>
 
       <section className={secao} aria-labelledby="t-sessoes">

@@ -41,7 +41,7 @@ begin
 
   select coalesce(string_agg(to_jsonb(t)::text, ' '), '') into v_part from public.pessoas_parecidas(50) t;
   v_out := v_out || ' ' || v_part;
-  select coalesce(string_agg(to_jsonb(t)::text, ' '), '') into v_part from public.feed(null, 50) t;
+  select coalesce(string_agg(to_jsonb(t)::text, ' '), '') into v_part from public.feed_para_voce(null, 50) t;
   v_out := v_out || ' ' || v_part;
   select coalesce(string_agg(to_jsonb(t)::text, ' '), '') into v_part from public.minhas_denuncias() t;
   v_out := v_out || ' ' || v_part;

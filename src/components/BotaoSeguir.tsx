@@ -1,36 +1,59 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { deixarDeSeguir, seguir } from "@/app/acoes/social";
 
-type Props = { alvoId: string; nome: string; seguindoInicial: boolean };
+type Props = { alvoId: string; nome: string; seguindoInicial: boolean; /** Botão principal da tela (perfil). */ grande?: boolean };
 
-export function BotaoSeguir({ alvoId, nome, seguindoInicial }: Props) {
+// Otimista: o botão muda na hora do toque. Se o servidor recusar (bloqueio,
+// limite de follows, sessão caída), volta ao que era e mostra o motivo.
+export function BotaoSeguir({ alvoId, nome, seguindoInicial, grande }: Props) {
   const [seguindo, setSeguindo] = useState(seguindoInicial);
   const [erro, setErro] = useState<string | null>(null);
-  const [pendente, iniciar] = useTransition();
+  // O que a pessoa quer (o último toque) e o que o servidor já confirmou. Um
+  // segundo toque antes da resposta não se perde: quando a resposta chega, o
+  // botão manda o que faltar para os dois ficarem iguais.
+  const desejado = useRef(seguindoInicial);
+  const confirmado = useRef(seguindoInicial);
+  const emCurso = useRef(false);
+  // O botão não trava enquanto o servidor responde, mas avisa (aria-busy).
+  const [enviando, setEnviando] = useState(false);
+
+  async function sincronizar() {
+    emCurso.current = true;
+    setEnviando(true);
+    while (confirmado.current !== desejado.current) {
+      const alvo = desejado.current;
+      const r = alvo ? await seguir(alvoId) : await deixarDeSeguir(alvoId);
+      if (!r.ok) {
+        // O servidor recusou: volta ao último estado que ele confirmou.
+        desejado.current = confirmado.current;
+        setSeguindo(confirmado.current);
+        setErro(r.erro);
+        break;
+      }
+      confirmado.current = alvo;
+    }
+    emCurso.current = false;
+    setEnviando(false);
+  }
 
   function alternar() {
-    const era = seguindo;
+    const novo = !seguindo;
     setErro(null);
-    setSeguindo(!era);
-    iniciar(async () => {
-      const r = era ? await deixarDeSeguir(alvoId) : await seguir(alvoId);
-      if (!r.ok) {
-        setSeguindo(era);
-        setErro(r.erro);
-      }
-    });
+    setSeguindo(novo);
+    desejado.current = novo;
+    if (!emCurso.current) void sincronizar();
   }
 
   return (
     <span className="inline-flex flex-col gap-1">
       <button
         type="button"
-        className={`btn btn-peq ${seguindo ? "btn-sec" : "btn-pri"}`}
+        className={`btn ${grande ? "" : "btn-peq"} ${seguindo ? "btn-sec" : "btn-pri"}`}
         aria-pressed={seguindo}
+        aria-busy={enviando}
         aria-label={seguindo ? `Deixar de seguir ${nome}` : `Seguir ${nome}`}
-        disabled={pendente}
         onClick={alternar}
       >
         {seguindo ? "Seguindo" : "Seguir"}

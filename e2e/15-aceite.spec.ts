@@ -37,8 +37,10 @@ test("termos desatualizados: vê o que mudou, e só continua depois de aceitar",
   await expect(page).toHaveURL(/\/aceite$/);
   await expect(page.getByRole("heading", { level: 1, name: "Os termos do Peripatos mudaram" })).toBeVisible();
   const mudou = page.getByRole("region", { name: "O que mudou" });
-  await expect(mudou.getByRole("listitem").first()).toContainText("mensagens diretas");
-  await expect(mudou.getByText("A moderação não tem acesso a conversas.")).toBeVisible();
+  await expect(mudou.getByRole("listitem").first()).toContainText("aba de notificações");
+  await expect(mudou.getByText("Uma conquista ganha não é retirada.")).toBeVisible();
+  // Uma versão só cobre as três mudanças: notificações, conquistas e tags sensíveis.
+  await expect(mudou.getByText(/deixaram de contar como gostos/)).toBeVisible();
   await expect(page.getByText("Você tinha aceitado a versão anterior em")).toBeVisible();
 
   // Nenhuma outra tela do app abre antes do aceite.
@@ -89,6 +91,8 @@ test("termos desatualizados: vê o que mudou, e só continua depois de aceitar",
   await page2.getByLabel("O que você quer conversar?").fill(texto);
   await page2.getByRole("button", { name: "Publicar" }).click();
   await expect(page2.getByRole("article").filter({ hasText: texto })).toBeVisible();
+  // O post aparece na hora; "Apagar" é a prova de que o servidor aceitou.
+  await expect(page2.getByRole("article").filter({ hasText: texto }).getByRole("button", { name: "Apagar" })).toBeVisible();
   // Com os termos em dia a tela de aceite não aparece mais.
   await page2.goto("/aceite");
   await expect(page2).toHaveURL("/");

@@ -14,10 +14,14 @@ type Props = {
   comum?: boolean;
   /** Gosto que não é em comum, mostrado de forma discreta. */
   discreta?: boolean;
+  /** Tag sensível na seção "Sobre" do perfil: cor neutra, sem destaque. */
+  neutra?: boolean;
 };
 
-export function TagChip({ tag, comum, discreta }: Props) {
-  const classe = comum ? "chip chip-comum" : tag.sensivel ? "chip chip-sens" : discreta ? "chip chip-fraco" : "chip";
+export function TagChip({ tag, comum, discreta, neutra }: Props) {
+  // Tag sensível nunca é "em comum": mesmo que alguém peça, não fica âmbar.
+  const classe =
+    comum && !tag.sensivel ? "chip chip-comum" : neutra ? "chip" : tag.sensivel ? "chip chip-sens" : discreta ? "chip chip-fraco" : "chip";
   return (
     <span className={classe}>
       {tag.sensivel && (
@@ -27,7 +31,7 @@ export function TagChip({ tag, comum, discreta }: Props) {
         </>
       )}
       {tag.nome}
-      {comum && <span className="sr-only"> (em comum)</span>}
+      {comum && !tag.sensivel && <span className="sr-only"> (em comum)</span>}
     </span>
   );
 }

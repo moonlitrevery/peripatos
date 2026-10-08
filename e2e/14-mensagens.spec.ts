@@ -257,7 +257,8 @@ test.describe("Mensagens entre dois navegadores", () => {
 
   test("bloqueio esconde a conversa dos dois lados", async () => {
     await caue.goto("/u/iris");
-    await caue.getByRole("button", { name: "Bloquear", exact: true }).click();
+    await caue.getByRole("button", { name: "Mais ações para Íris" }).click();
+    await caue.getByRole("menuitem", { name: "Bloquear" }).click();
     await caue.getByRole("dialog", { name: "Bloquear Íris?" }).getByRole("button", { name: "Bloquear", exact: true }).click();
     await expect(caue).not.toHaveURL(/\/u\/iris$/);
 

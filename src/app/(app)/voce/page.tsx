@@ -38,6 +38,11 @@ export default async function Voce() {
             </Link>
           </li>
           <li>
+            <Link href="/conquistas" className={item}>
+              Conquistas <span aria-hidden="true">›</span>
+            </Link>
+          </li>
+          <li>
             <Link href="/config" className={item}>
               Configurações <span aria-hidden="true">›</span>
             </Link>

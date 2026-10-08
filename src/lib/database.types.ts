@@ -5,7 +5,20 @@ export type Database = {
   
   "public": {
           Tables: {
-            "blocks": {
+            "achievements": {
+                  Row: {
+                    "color": string,"description": string,"emoji": string,"emoji_label": string,"is_manual": boolean,"is_secret": boolean,"name": string,"position": number,"private_by_default": boolean,"slug": string
+                  }
+                  Insert: {
+                    "color": string,"description": string,"emoji": string,"emoji_label": string,"is_manual"?: boolean,"is_secret"?: boolean,"name": string,"position": number,"private_by_default"?: boolean,"slug": string
+                  }
+                  Update: {
+                    "color"?: string,"description"?: string,"emoji"?: string,"emoji_label"?: string,"is_manual"?: boolean,"is_secret"?: boolean,"name"?: string,"position"?: number,"private_by_default"?: boolean,"slug"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"blocks": {
                   Row: {
                     "blocked_id": string,"blocker_id": string,"created_at": string
                   }
@@ -186,6 +199,37 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"notifications": {
+                  Row: {
+                    "achievement_slug": string | null,"actor_id": string | null,"created_at": string,"id": string,"pushed_at": string | null,"read_at": string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
+                  }
+                  Insert: {
+                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"pushed_at"?: string | null,"read_at"?: string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
+                  }
+                  Update: {
+                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"pushed_at"?: string | null,"read_at"?: string | null,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_achievement_slug_fkey"
+      columns: ["achievement_slug"]
+isOneToOne: false
+      referencedRelation: "achievements"
+      referencedColumns: ["slug"]
+    },{
+      foreignKeyName: "notifications_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"posts": {
                   Row: {
                     "author_id": string,"body": string,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"gif_alt": string | null,"gif_id": string | null,"hidden_at": string | null,"hidden_by": string | null,"id": string,"institution_id": string
@@ -277,6 +321,25 @@ isOneToOne: false
       columns: ["institution_id"]
 isOneToOne: false
       referencedRelation: "institutions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"push_preferences": {
+                  Row: {
+                    "avatar": boolean,"conquista": boolean,"denuncia": boolean,"mensagem": boolean,"mutuo": boolean,"novo_seguidor": boolean,"termos": boolean,"user_id": string
+                  }
+                  Insert: {
+                    "avatar"?: boolean,"conquista"?: boolean,"denuncia"?: boolean,"mensagem"?: boolean,"mutuo"?: boolean,"novo_seguidor"?: boolean,"termos"?: boolean,"user_id"?: string
+                  }
+                  Update: {
+                    "avatar"?: boolean,"conquista"?: boolean,"denuncia"?: boolean,"mensagem"?: boolean,"mutuo"?: boolean,"novo_seguidor"?: boolean,"termos"?: boolean,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_preferences_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
                   ]
@@ -405,6 +468,31 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"user_achievements": {
+                  Row: {
+                    "achievement_slug": string,"hidden": boolean,"user_id": string
+                  }
+                  Insert: {
+                    "achievement_slug": string,"hidden"?: boolean,"user_id": string
+                  }
+                  Update: {
+                    "achievement_slug"?: string,"hidden"?: boolean,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_achievements_achievement_slug_fkey"
+      columns: ["achievement_slug"]
+isOneToOne: false
+      referencedRelation: "achievements"
+      referencedColumns: ["slug"]
+    },{
+      foreignKeyName: "user_achievements_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -429,6 +517,9 @@ isOneToOne: false
 "completar_onboarding":
 { Args: { "p_bio"?: string,"p_data_nascimento": string,"p_display_name": string,"p_termos_versao"?: string,"p_username": string }; Returns: Json
                            },
+"conceder_conquista":
+{ Args: { "p_conquista": string,"p_motivo": string,"p_user_id": string }; Returns: undefined
+                           },
 "consentir_tags_sensiveis":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
@@ -447,17 +538,30 @@ isOneToOne: false
 "excluir_conta":
 { Args: { "p_confirmacao": string }; Returns: undefined
                            },
-"feed":
+"feed_para_voce":
 { Args: { "p_cursor"?: string,"p_limite"?: number }; Returns: {
-              "afinidade": number,"author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"score": number,"username": string
+              "author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"username": string
+            }[]
+                           },
+"feed_seguindo":
+{ Args: { "p_cursor"?: string,"p_limite"?: number }; Returns: {
+              "author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"username": string
             }[]
                            },
 "marcar_conversa_lida":
 { Args: { "p_conversa": string }; Returns: undefined
                            },
+"marcar_notificacoes_lidas":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "meus_bloqueios":
 { Args: Record<PropertyKey, never>; Returns: {
               "bloqueado_em": string,"display_name": string,"user_id": string,"username": string
+            }[]
+                           },
+"minhas_conquistas":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ganha_em": string,"oculta": boolean,"slug": string
             }[]
                            },
 "minhas_conversas":
@@ -468,6 +572,11 @@ isOneToOne: false
 "minhas_denuncias":
 { Args: Record<PropertyKey, never>; Returns: {
               "created_at": string,"id": string,"post_id": string,"profile_id": string,"reason": Database["public"]['Enums']["report_reason"],"status": Database["public"]['Enums']["report_status"]
+            }[]
+                           },
+"minhas_notificacoes":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "conquista_cor": string,"conquista_emoji": string,"conquista_emoji_rotulo": string,"conquista_nome": string,"conquista_slug": string,"grupo": string,"lida": boolean,"pessoas": Json,"quantidade": number,"tipo": Database["public"]['Enums']["notification_type"],"ultima_em": string
             }[]
                            },
 "moderar_avatar":
@@ -486,6 +595,11 @@ isOneToOne: false
               "conversa": string,"destinatario": string,"remetente": string
             }[]
                            },
+"preparar_push_de_notificacao":
+{ Args: { "p_notificacao": string }; Returns: {
+              "destinatario": string,"tipo": string
+            }[]
+                           },
 "registrar_busca_gif":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
@@ -498,6 +612,9 @@ isOneToOne: false
 "resolver_pedido_tag":
 { Args: { "p_aprovar": boolean,"p_motivo": string,"p_request_id": string }; Returns: undefined
                            },
+"responder_enigma":
+{ Args: { "p_resposta": string }; Returns: boolean
+                           },
 "restaurar_post":
 { Args: { "p_motivo": string,"p_post_id": string }; Returns: undefined
                            },
@@ -506,10 +623,13 @@ isOneToOne: false
                            },
 "total_nao_lidas":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"total_notificacoes_nao_lidas":
+{ Args: Record<PropertyKey, never>; Returns: number
                            }
           }
           Enums: {
-            "avatar_status": "sem_avatar"|"pendente"|"aprovado"|"recusado","moderation_action_type": "ocultar_post"|"restaurar_post"|"banir_usuario"|"desbanir_usuario"|"aprovar_avatar"|"recusar_avatar"|"resolver_denuncia"|"conceder_cargo"|"remover_cargo"|"resolver_pedido_tag","report_reason": "spam"|"assedio"|"discurso_de_odio"|"conteudo_sexual"|"violencia_ou_ameaca"|"perfil_falso"|"menor_de_idade"|"exposicao_de_dados_pessoais"|"outro","report_status": "aberta"|"em_analise"|"resolvida"|"rejeitada","staff_role": "moderador"|"admin","tag_request_status": "pendente"|"aprovada"|"recusada"
+            "avatar_status": "sem_avatar"|"pendente"|"aprovado"|"recusado","moderation_action_type": "ocultar_post"|"restaurar_post"|"banir_usuario"|"desbanir_usuario"|"aprovar_avatar"|"recusar_avatar"|"resolver_denuncia"|"conceder_cargo"|"remover_cargo"|"resolver_pedido_tag"|"conceder_conquista","notification_type": "novo_seguidor"|"mutuo"|"avatar_aprovado"|"avatar_recusado"|"denuncia_analisada"|"termos_atualizados"|"conquista","report_reason": "spam"|"assedio"|"discurso_de_odio"|"conteudo_sexual"|"violencia_ou_ameaca"|"perfil_falso"|"menor_de_idade"|"exposicao_de_dados_pessoais"|"outro","report_status": "aberta"|"em_analise"|"resolvida"|"rejeitada","staff_role": "moderador"|"admin","tag_request_status": "pendente"|"aprovada"|"recusada"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -625,7 +745,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "avatar_status": ["sem_avatar", "pendente", "aprovado", "recusado"],"moderation_action_type": ["ocultar_post", "restaurar_post", "banir_usuario", "desbanir_usuario", "aprovar_avatar", "recusar_avatar", "resolver_denuncia", "conceder_cargo", "remover_cargo", "resolver_pedido_tag"],"report_reason": ["spam", "assedio", "discurso_de_odio", "conteudo_sexual", "violencia_ou_ameaca", "perfil_falso", "menor_de_idade", "exposicao_de_dados_pessoais", "outro"],"report_status": ["aberta", "em_analise", "resolvida", "rejeitada"],"staff_role": ["moderador", "admin"],"tag_request_status": ["pendente", "aprovada", "recusada"]
+            "avatar_status": ["sem_avatar", "pendente", "aprovado", "recusado"],"moderation_action_type": ["ocultar_post", "restaurar_post", "banir_usuario", "desbanir_usuario", "aprovar_avatar", "recusar_avatar", "resolver_denuncia", "conceder_cargo", "remover_cargo", "resolver_pedido_tag", "conceder_conquista"],"notification_type": ["novo_seguidor", "mutuo", "avatar_aprovado", "avatar_recusado", "denuncia_analisada", "termos_atualizados", "conquista"],"report_reason": ["spam", "assedio", "discurso_de_odio", "conteudo_sexual", "violencia_ou_ameaca", "perfil_falso", "menor_de_idade", "exposicao_de_dados_pessoais", "outro"],"report_status": ["aberta", "em_analise", "resolvida", "rejeitada"],"staff_role": ["moderador", "admin"],"tag_request_status": ["pendente", "aprovada", "recusada"]
           }
         }
 } as const
