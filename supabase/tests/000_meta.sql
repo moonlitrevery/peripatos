@@ -184,7 +184,9 @@ select bag_eq(
        ('definir_cargo'), ('remover_cargo'), ('resolver_pedido_tag'),
        ('consentir_tags_sensiveis'), ('revogar_tags_sensiveis'), ('registrar_busca_gif'),
        ('abrir_conversa'), ('minhas_conversas'), ('total_nao_lidas'), ('marcar_conversa_lida'),
-       ('denunciar_mensagem'), ('aceitar_termos') $$,
+       ('denunciar_mensagem'), ('aceitar_termos'),
+       ('minhas_notificacoes'), ('total_notificacoes_nao_lidas'), ('marcar_notificacoes_lidas'),
+       ('minhas_conquistas'), ('conceder_conquista'), ('responder_enigma') $$,
   'META: authenticated só executa as RPCs conhecidas de public'
 );
 

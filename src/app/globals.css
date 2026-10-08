@@ -122,4 +122,28 @@ h1, h2, h3 {
   .erro { @apply text-perigo text-sm font-semibold; }
   .fino { @apply text-tinta-2 text-[0.8125rem]; }
   .arco { border-radius: 999px 999px 18% 18% / 50% 50% 8% 8%; }
+
+  /* Cargo: pílula cheia, só texto. O brilho é da Administração. */
+  .cargo {
+    @apply bg-petroleo text-sobre-petroleo inline-flex items-center rounded-full px-3 py-1 text-[0.75rem] leading-none font-bold;
+  }
+  .cargo-admin {
+    box-shadow:
+      0 0 0 2px var(--fundo),
+      0 0 0 4px color-mix(in srgb, var(--petroleo) 45%, transparent),
+      0 0 14px 4px color-mix(in srgb, var(--petroleo) 60%, transparent);
+  }
+
+  /* Conquista: medalha de cantos retos com a cor dela (--cor) e o nome. */
+  .medalha {
+    @apply inline-grid shrink-0 place-items-center leading-none;
+    border-radius: 28%;
+    border: 2px solid var(--cor);
+    background: color-mix(in srgb, var(--cor) 24%, var(--papel));
+  }
+  .conquista {
+    @apply bg-papel border-linha text-tinta inline-flex min-h-11 items-center gap-2 rounded-xl border py-1.5 pr-3 pl-1.5 text-[0.8125rem] font-semibold;
+  }
+  .conquista:hover { border-color: var(--tinta-2); }
+  .conquista:focus-visible { border-radius: 12px; }
 }

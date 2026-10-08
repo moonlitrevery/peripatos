@@ -56,8 +56,16 @@ export default function Privacidade() {
           para mostrar a você o que é novo.
         </li>
         <li>
-          <strong>Notificações, se você ativar.</strong> O endereço que o seu navegador cria para receber avisos neste
-          aparelho. Você desliga quando quiser em Configurações.
+          <strong>Notificações dentro do app.</strong> Quem começou a te seguir, quando você e alguém passam a se
+          seguir, o resultado da análise da sua foto e das suas denúncias, mudanças nos Termos e conquistas novas. Só
+          você lê as suas, e elas são apagadas depois de 60 dias.
+        </li>
+        <li>
+          <strong>Conquistas.</strong> Quais você ganhou, quando, e se cada uma aparece no seu perfil.
+        </li>
+        <li>
+          <strong>Avisos no aparelho, se você ativar.</strong> O endereço que o seu navegador cria para receber avisos
+          neste aparelho, e quais tipos de aviso você escolheu. Você desliga quando quiser em Configurações.
         </li>
         <li>
           <strong>Registros técnicos.</strong> Os serviços que hospedam o app registram endereço IP, data e hora dos
@@ -108,12 +116,43 @@ export default function Privacidade() {
       </ul>
 
       <h2>Notificações</h2>
+      <ul>
+        <li>
+          A aba de notificações é só sua: ninguém mais lê, nem a moderação. O aviso de que uma denúncia sua foi
+          analisada não diz o que foi decidido sobre a outra pessoa.
+        </li>
+        <li>
+          Se você bloquear alguém, as notificações entre vocês são apagadas. Se alguém excluir a conta, as notificações
+          que falavam dessa pessoa também são.
+        </li>
+        <li>Notificações com mais de 60 dias são apagadas automaticamente.</li>
+      </ul>
       <p>
-        Se você ativar, avisamos quando chega uma mensagem. <strong>A notificação diz só de quem é</strong>, nunca o
-        que a pessoa escreveu. Ela é entregue pelo serviço de notificações do seu navegador ou sistema (Google, Mozilla,
+        Se você ativar os avisos no aparelho, escolhe quais tipos quer receber. O de mensagem{" "}
+        <strong>diz só de quem é</strong>, nunca o que a pessoa escreveu; os outros dizem só o que aconteceu, sem o
+        nome de ninguém. O aviso é entregue pelo serviço de notificações do seu navegador ou sistema (Google, Mozilla,
         Apple ou Microsoft), que recebe o aviso cifrado e sabe que o seu aparelho recebeu uma notificação do Peripatos.
         No iPhone e no iPad, só funciona com o Peripatos instalado na tela de início.
       </p>
+
+      <h2>Conquistas</h2>
+      <ul>
+        <li>
+          As conquistas são dadas automaticamente, a partir do que já está guardado: seus posts, suas mensagens (só o
+          fato de existirem e a hora, nunca o conteúdo), seu perfil, seus gostos, a idade da conta e as pessoas com
+          quem você se segue mutuamente. Tags sensíveis nunca contam para conquista nenhuma.
+        </li>
+        <li>
+          <strong>Não registramos seus acessos nem o tempo que você passa no app.</strong> A conquista que depende de
+          horário usa a hora em que você publicou um post ou enviou uma mensagem, que já era guardada, e nasce
+          escondida do seu perfil.
+        </li>
+        <li>
+          Suas conquistas aparecem no seu perfil e na página de cada conquista, para quem pode ver o seu perfil. Você
+          pode esconder qualquer uma. A data em que você ganhou só você vê.
+        </li>
+        <li>Uma conquista ganha é permanente: ela só some se você excluir a conta.</li>
+      </ul>
 
       <h2>Tags sensíveis</h2>
       <p>
@@ -162,7 +201,7 @@ export default function Privacidade() {
         </li>
         <li>
           <strong>Serviços de notificação dos navegadores</strong> (Google, Mozilla, Apple, Microsoft): só se você
-          ativar as notificações. Recebem um aviso cifrado com o nome de quem te escreveu.
+          ativar as notificações. Recebem um aviso cifrado com o nome de quem te escreveu, ou só com o tipo do aviso.
         </li>
         <li>
           <strong>Giphy</strong> (Giphy, Inc.): busca e exibição de GIFs. As buscas saem do nosso servidor, sem dizer

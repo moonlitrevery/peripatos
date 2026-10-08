@@ -4,7 +4,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-// Tempo real das mensagens.
+// Tempo real das mensagens e das notificações.
 //
 // Cada pessoa assina UM canal privado, o dela ("usuario:<uid>"). O Realtime
 // só deixa entrar quem passa pela política de realtime.messages, e essa
@@ -24,6 +24,9 @@ let canal: RealtimeChannel | null = null;
 let dono: string | null = null;
 let conectando: Promise<void> | null = null;
 const ouvintes = new Set<Ouvinte>();
+// O mesmo canal avisa que há notificação nova. O aviso não traz nada: quem
+// ouve busca pela API.
+const ouvintesDeNotificacao = new Set<() => void>();
 
 // A navegação e a conversa aberta pedem a conexão quase ao mesmo tempo. Sem
 // esta guarda as duas passariam pelo "ainda não há canal" e criariam duas
@@ -53,7 +56,18 @@ async function abrirCanal(uid: string) {
       if (!p || (p.tipo !== "nova" && p.tipo !== "apagada") || typeof p.conversa !== "string" || typeof p.mensagem !== "string") return;
       for (const o of ouvintes) o({ tipo: p.tipo, conversa: p.conversa, mensagem: p.mensagem });
     })
+    .on("broadcast", { event: "notificacao" }, () => {
+      for (const o of ouvintesDeNotificacao) o();
+    })
     .subscribe();
+}
+
+function soltarSeNinguemOuve() {
+  if (ouvintes.size === 0 && ouvintesDeNotificacao.size === 0 && canal) {
+    void createClient().removeChannel(canal);
+    canal = null;
+    dono = null;
+  }
 }
 
 // Aviso local, só dentro desta aba: "acabei de marcar uma conversa como lida".
@@ -83,11 +97,24 @@ export function useEventosDeMensagem(uid: string, aoReceber: Ouvinte) {
     void conectar(uid);
     return () => {
       ouvintes.delete(ouvinte);
-      if (ouvintes.size === 0 && canal) {
-        void createClient().removeChannel(canal);
-        canal = null;
-        dono = null;
-      }
+      soltarSeNinguemOuve();
+    };
+  }, [uid]);
+}
+
+export function useAvisoDeNotificacao(uid: string, aoReceber: () => void) {
+  const atual = useRef(aoReceber);
+  useEffect(() => {
+    atual.current = aoReceber;
+  }, [aoReceber]);
+
+  useEffect(() => {
+    const ouvinte = () => atual.current();
+    ouvintesDeNotificacao.add(ouvinte);
+    void conectar(uid);
+    return () => {
+      ouvintesDeNotificacao.delete(ouvinte);
+      soltarSeNinguemOuve();
     };
   }, [uid]);
 }

@@ -13,9 +13,10 @@ create function tests.conv(p_a text, p_b text) returns uuid language sql stable 
 create function tests.msg(p_body text) returns uuid language sql stable security definer set search_path = '' as
   -- só mensagens das contas deste teste: num banco que já rodou o e2e existem outras
   $$ select m.id from public.messages m where m.body = p_body and m.sender_id in (select u.id from tests.users u) $$;
--- eventos de tempo real gravados pelo banco para o canal de uma pessoa
+-- eventos de MENSAGEM gravados pelo banco para o canal de uma pessoa (o mesmo
+-- canal leva também o aviso de notificação nova, que não interessa aqui)
 create function tests.eventos(p_alias text) returns bigint language sql stable security definer set search_path = '' as
-  $$ select count(*) from realtime.messages m where m.topic = 'usuario:' || tests.uid(p_alias)::text $$;
+  $$ select count(*) from realtime.messages m where m.topic = 'usuario:' || tests.uid(p_alias)::text and m.event = 'mensagem' $$;
 grant execute on function tests.conv(text, text), tests.msg(text), tests.eventos(text) to authenticated;
 
 -- ana <-> bia mútuos; caio segue ana (não mútuo); davi é um terceiro

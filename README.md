@@ -77,9 +77,17 @@ Se `http://127.0.0.1:54321` não responder depois do `supabase start` (acontece 
 
 **Notificações push.** A inscrição do aparelho fica em `push_subscriptions` (só a própria pessoa lê). **Quem pede a notificação é o banco**: um trigger em `messages` chama a Edge Function `notificar-mensagem` a cada mensagem gravada (pela extensão `pg_net`, depois do commit), venha ela do app ou de uma chamada direta à API. O pedido leva só o id da mensagem e um segredo que prova que veio do banco; a função não aceita chamada de usuário. O que entra na notificação sai de `preparar_notificacao`, que só a função executa e que **não devolve o texto**: "Nova mensagem de <nome>" e mais nada. O banco só aceita endereço de serviço de push de navegador (`private.push_hosts`), para a função não virar ponte para outros endereços. No iPhone só funciona com o app instalado na tela de início.
 
+### Notificações e conquistas (marco 3)
+
+- **Aba de notificações** (`/notificacoes`), só legível pelo dono, com contador de não lidas em tempo real. Os eventos (novo seguidor, viraram mútuos, avatar aprovado ou recusado, denúncia analisada, termos atualizados, conquista nova) são todos gerados por trigger no banco; nenhum papel da API escreve na tabela. Repetidos são agrupados, bloqueio e exclusão de conta apagam, e o job diário remove o que passou de 60 dias.
+- **Push opcional por tipo** em Configurações, pela mesma Edge Function das mensagens. O aviso não leva o nome de ninguém.
+- **Conquistas** (`/conquistas`, `/conquistas/<slug>` e no perfil): 14 no catálogo, concedidas só pelo banco, permanentes, com emoji descrito para leitor de tela e cor própria. A pessoa esconde do perfil as que quiser.
+- **Cargos**: Administração com brilho, Moderação sem, os dois sempre com o nome escrito.
+- Regras de cada conquista, o que configurar em produção (fim do beta, resposta do enigma) e as decisões tomadas: [`docs/conquistas.md`](docs/conquistas.md).
+
 ### Consentimentos
 
-- **Termos e Política.** No onboarding a pessoa marca o aceite, e o banco grava a versão aceita e a data (`private.accounts.termos_versao`, `termos_aceitos_em`). A versão vigente mora no banco (`private.termos_versao_atual()`) e em `src/lib/legal.ts`; o banco só aceita o aceite da versão vigente.
+- **Termos e Política.** No onboarding a pessoa marca o aceite, e o banco grava a versão aceita e a data (`private.accounts.termos_versao`, `termos_aceitos_em`). A versão vigente mora no banco (a linha mais recente de `private.termos_versoes`, lida por `private.termos_versao_atual()`) e em `src/lib/legal.ts`; o banco só aceita o aceite da versão vigente.
 - **Novo aceite.** Quando a versão vigente é diferente da última aceita, o proxy leva a pessoa para `/aceite`, que mostra o que mudou (`MUDANCAS_DA_VERSAO` em `src/lib/legal.ts`). Aceitar libera o app; recusar oferece sair ou excluir a conta. **No banco**, sem o aceite da versão vigente a pessoa não posta nem manda mensagem (políticas restritivas em `posts` e `messages`); ler continua funcionando.
 - **Tags sensíveis (LGPD, art. 11).** Consentimento específico, pedido à parte, com a finalidade escrita. Sem consentimento registrado **o banco recusa** gravar tag sensível, por qualquer caminho. Em Configurações a pessoa revoga: as tags e o registro do consentimento são apagados na mesma transação.
 
@@ -346,6 +354,8 @@ No GitHub, o workflow `.github/workflows/ci.yml` roda tudo isso a cada push, num
 | `120_privacidade` | Despeja tudo o que usuário, moderador e admin conseguem ler e procura e-mails, domínios, RAs e colunas da conta privada |
 | `130_excluir_conta` | A exclusão apaga tudo da pessoa e mantém só o HMAC de banimento e a auditoria |
 | `160_mensagens_ajustes` | O banco pede a notificação a cada mensagem, só com o id; `preparar_notificacao` só para a service role, sem o texto, uma vez por mensagem e só com a conversa aberta. Sem o aceite da versão vigente não posta nem manda mensagem, e só se aceita a versão vigente. Excluir a conta apaga só as mensagens de quem saiu; a cópia na denúncia fica; quando os dois saem a conversa some |
+| `170_notificacoes` | Cada evento de notificação, só o dono lê, ninguém escreve pela API, agrupamento, contador, bloqueio, banido, push por tipo, 60 dias, exclusão de conta |
+| `180_conquistas` | Cada conquista; ninguém se dá conquista pela API; a Coruja não aparece para os outros por padrão; a Koinonia não vaza os outros dois; o Minotauro não aceita força bruta; Héracles só por admin, registrado |
 | `150_mensagens` | Quem abre conversa; envio, leitura e limites; terceiros e **staff não leem nem escrevem**; sem "visto" (marcador de leitura invisível para o outro); eventos de tempo real só para os dois, em canal privado e sem o texto; apagar; fechar ao deixar de ser mútuo e reabrir; denúncia com cópia que não pode ser forjada; bloqueio esconde tudo; rate limit; inscrição de push só em serviço conhecido; excluir conta apaga as mensagens |
 | `140_auditoria` | Staff sem `aal2` não age nem lê (e `aal2` em metadata não conta); consentimento de tags sensíveis e revogação; aceite dos termos só da versão vigente; `ra` e `birth_date` não existem mais; mesmo RA com outro nome é recusado; limite de buscas de GIF; texto alternativo do GIF |
 

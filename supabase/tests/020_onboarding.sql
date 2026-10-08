@@ -144,7 +144,7 @@ select is(
 );
 select is(
   public.conta_status() - 'onboarding_completo' - 'termos_aceitos_em',
-  '{"maior_de_idade": true, "banido": false, "ativo": true, "termos_versao": "2026-10-08-rascunho", "termos_em_dia": true, "sensiveis_consentido_em": null}'::jsonb,
+  '{"maior_de_idade": true, "banido": false, "ativo": true, "termos_versao": "2026-10-09-rascunho", "termos_em_dia": true, "sensiveis_consentido_em": null}'::jsonb,
   'conta_status não devolve a data, só o resultado'
 );
 
