@@ -37,8 +37,8 @@ test("termos desatualizados: vê o que mudou, e só continua depois de aceitar",
   await expect(page).toHaveURL(/\/aceite$/);
   await expect(page.getByRole("heading", { level: 1, name: "Os termos do Peripatos mudaram" })).toBeVisible();
   const mudou = page.getByRole("region", { name: "O que mudou" });
-  await expect(mudou.getByRole("listitem").first()).toContainText("mensagens diretas");
-  await expect(mudou.getByText("A moderação não tem acesso a conversas.")).toBeVisible();
+  await expect(mudou.getByRole("listitem").first()).toContainText("aba de notificações");
+  await expect(mudou.getByText("Uma conquista ganha não é retirada.")).toBeVisible();
   await expect(page.getByText("Você tinha aceitado a versão anterior em")).toBeVisible();
 
   // Nenhuma outra tela do app abre antes do aceite.

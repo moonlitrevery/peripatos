@@ -345,6 +345,7 @@ O que fazer, em ordem de confiança:
 
 ## 15. Antes de abrir para outras pessoas
 
+- [ ] Marco 3: data do fim do beta (`fundador_ate`) e resposta do enigma definidas, `notificar-mensagem` publicada de novo e o job `peripatos-tarefas-diarias` ativo em `cron.job`. Passo a passo em `docs/conquistas.md`.
 - [ ] `/termos` e `/privacidade` revisados (hoje são rascunhos, marcados como tal) e o e-mail de contato trocado.
 - [ ] Chave de produção do Giphy pedida, se o uso passar do limite da de desenvolvimento.
 - [ ] Limites do passo 8 revistos para o tamanho esperado do lançamento.
@@ -358,7 +359,7 @@ O que fazer, em ordem de confiança:
 | Mudou | Faça |
 | --- | --- |
 | Uma migration nova | **[comando]** backup (`scripts/backup-criptografado.sh`), `pnpm exec supabase db push --dry-run`, depois `db push`, depois `pnpm verificar:deploy` |
-| Os Termos ou a Política | Nova versão em `src/lib/legal.ts` (com a lista `MUDANCAS_DA_VERSAO` reescrita) **e** numa migration que troca `private.termos_versao_atual()`, na mesma entrega. A partir do `db push`, quem aceitou a versão anterior vê a tela de novo aceite e **não posta nem manda mensagem até aceitar**: faça o `db push` logo depois de o deploy do app terminar, nunca antes |
+| Os Termos ou a Política | Nova versão em `src/lib/legal.ts` (com a lista `MUDANCAS_DA_VERSAO` reescrita) **e** numa migration que insere a versão em `private.termos_versoes` (ver `docs/conquistas.md`), na mesma entrega. A partir do `db push`, quem aceitou a versão anterior vê a tela de novo aceite e **não posta nem manda mensagem até aceitar**: faça o `db push` logo depois de o deploy do app terminar, nunca antes |
 | A Edge Function | **[comando]** `pnpm exec supabase functions deploy processar-avatar` |
 | O app | merge em `main`; o Vercel faz o deploy |
 | App **e** migration na mesma entrega | merge em `main`, depois `git checkout main && git pull`, e só então o `db push`. Entre os dois há uma janela em que app e banco não combinam: faça em horário de pouco uso |
