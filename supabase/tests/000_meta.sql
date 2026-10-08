@@ -182,7 +182,9 @@ select bag_eq(
        ('ocultar_post'), ('restaurar_post'), ('banir_usuario'), ('desbanir_usuario'),
        ('moderar_avatar'), ('resolver_denuncia'),
        ('definir_cargo'), ('remover_cargo'), ('resolver_pedido_tag'),
-       ('consentir_tags_sensiveis'), ('revogar_tags_sensiveis'), ('registrar_busca_gif') $$,
+       ('consentir_tags_sensiveis'), ('revogar_tags_sensiveis'), ('registrar_busca_gif'),
+       ('abrir_conversa'), ('minhas_conversas'), ('total_nao_lidas'), ('marcar_conversa_lida'),
+       ('denunciar_mensagem') $$,
   'META: authenticated só executa as RPCs conhecidas de public'
 );
 

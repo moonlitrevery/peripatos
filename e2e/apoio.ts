@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { createHmac } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
@@ -221,3 +222,52 @@ export async function proximaJanelaTotp() {
 }
 
 export const ARQUIVO_DA_STAFF_AAL2 = path.join(__dirname, ".auth", "moderadora-aal2.json");
+
+// ---------------------------------------------------------------------------
+// Preparação de dados por fora do app
+// ---------------------------------------------------------------------------
+
+/** O id (uuid) de uma conta do seed. */
+export async function idDe(alias: Alias): Promise<string> {
+  const { data, error } = await admin().from("profiles").select("id").eq("username", alias).single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+/** Deixa duas contas do seed se seguindo (e sem bloqueio entre elas). */
+export async function tornarMutuos(a: Alias, b: Alias) {
+  const [ida, idb] = await Promise.all([idDe(a), idDe(b)]);
+  await admin().from("blocks").delete().eq("blocker_id", ida).eq("blocked_id", idb);
+  await admin().from("blocks").delete().eq("blocker_id", idb).eq("blocked_id", ida);
+  for (const [de, para] of [
+    [ida, idb],
+    [idb, ida],
+  ]) {
+    const { error } = await admin().from("follows").insert({ follower_id: de, followee_id: para });
+    if (error && error.code !== "23505") throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Acessibilidade
+// ---------------------------------------------------------------------------
+
+const REGRAS_AXE = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+
+export type AchadoAxe = { tela: string; regra: string; impacto: string; alvo: string; resumo: string };
+
+/** Roda o axe-core na tela atual e acumula as violações sérias ou críticas. */
+export async function examinarAxe(page: Page, tela: string, achados: AchadoAxe[]) {
+  // As fontes entram com display: swap; espera para medir o contraste do texto final.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  const resultado = await new AxeBuilder({ page }).withTags(REGRAS_AXE).analyze();
+  // Se o axe não avaliou nada, o "zero violações" não quer dizer nada.
+  expect(resultado.passes.length, `axe não avaliou ${tela}`).toBeGreaterThan(5);
+  expect(resultado.passes.some((r) => r.id === "color-contrast"), `contraste não avaliado em ${tela}`).toBe(true);
+  for (const v of resultado.violations) {
+    if (v.impact !== "serious" && v.impact !== "critical") continue;
+    for (const n of v.nodes) {
+      achados.push({ tela, regra: v.id, impacto: v.impact, alvo: n.target.join(" "), resumo: n.failureSummary ?? v.help });
+    }
+  }
+}

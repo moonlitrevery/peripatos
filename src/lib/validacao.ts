@@ -73,6 +73,12 @@ export const corpoDoPost = z
   .max(500, "O post pode ter até 500 caracteres.")
   .refine(semControle, "O post tem caracteres inválidos.");
 
+export const corpoDaMensagem = z
+  .string("Texto inválido.")
+  .trim()
+  .max(1000, "A mensagem pode ter até 1000 caracteres.")
+  .refine(semControle, "A mensagem tem caracteres inválidos.");
+
 export const gifId = z.string().regex(/^[A-Za-z0-9]{1,64}$/, "GIF inválido.");
 
 // O título que o Giphy dá ao GIF vira o texto alternativo. Chega pelo

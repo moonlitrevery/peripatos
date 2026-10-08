@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { contarNaoLidas } from "@/app/acoes/mensagens";
+import { useAoLer, useEventosDeMensagem } from "@/lib/tempo-real";
 
 const ICONES = {
   inicio: "M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
@@ -21,19 +24,34 @@ function Icone({ d }: { d: string }) {
 const base =
   "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[0.75rem] font-semibold md:flex-row md:gap-2 md:text-sm";
 
-// Quatro abas desde já: Mensagens chega no marco 2 e, quando chegar, nada
-// muda de lugar.
-export function Navegacao() {
+// O contador de não lidas é só de quem está olhando: vem do banco para esta
+// pessoa e ninguém mais tem acesso ao que ela leu ou deixou de ler.
+export function Navegacao({ uid, naoLidasIniciais }: { uid: string; naoLidasIniciais: number }) {
   const caminho = usePathname();
+  const [naoLidas, setNaoLidas] = useState(naoLidasIniciais);
+
+  const recontar = useCallback(() => {
+    void contarNaoLidas().then(setNaoLidas);
+  }, []);
+  // chegou ou sumiu uma mensagem
+  useEventosDeMensagem(uid, recontar);
+  // esta aba acabou de marcar uma conversa como lida
+  useAoLer(recontar);
+  // abrir uma conversa marca como lida: reconta ao trocar de tela
+  useEffect(() => {
+    recontar();
+  }, [caminho, recontar]);
+
   const abas = [
-    { href: "/", rotulo: "Início", icone: ICONES.inicio, ativa: caminho === "/" },
-    { href: "/gente", rotulo: "Gente", icone: ICONES.gente, ativa: caminho.startsWith("/gente") || caminho.startsWith("/u/") },
-    { href: null, rotulo: "Mensagens", icone: ICONES.mensagens, ativa: false },
+    { href: "/", rotulo: "Início", icone: ICONES.inicio, ativa: caminho === "/", aviso: 0 },
+    { href: "/gente", rotulo: "Gente", icone: ICONES.gente, ativa: caminho.startsWith("/gente") || caminho.startsWith("/u/"), aviso: 0 },
+    { href: "/mensagens", rotulo: "Mensagens", icone: ICONES.mensagens, ativa: caminho.startsWith("/mensagens"), aviso: naoLidas },
     {
       href: "/voce",
       rotulo: "Você",
       icone: ICONES.voce,
       ativa: ["/voce", "/config", "/moderacao"].some((p) => caminho.startsWith(p)),
+      aviso: 0,
     },
   ];
 
@@ -45,29 +63,36 @@ export function Navegacao() {
       <ul className="mx-auto flex max-w-xl">
         {abas.map((aba) => (
           <li key={aba.rotulo} className="flex flex-1">
-            {aba.href ? (
-              <Link
-                href={aba.href}
-                aria-current={aba.ativa ? "page" : undefined}
-                className={`${base} ${
-                  aba.ativa
-                    ? "text-petroleo shadow-[inset_0_3px_0_var(--petroleo)] md:shadow-[inset_0_-3px_0_var(--petroleo)]"
-                    : "text-tinta-2"
-                }`}
-              >
+            <Link
+              href={aba.href}
+              aria-current={aba.ativa ? "page" : undefined}
+              className={`${base} relative ${
+                aba.ativa
+                  ? "text-petroleo shadow-[inset_0_3px_0_var(--petroleo)] md:shadow-[inset_0_-3px_0_var(--petroleo)]"
+                  : "text-tinta-2"
+              }`}
+            >
+              <span className="relative">
                 <Icone d={aba.icone} />
-                {aba.rotulo}
-              </Link>
-            ) : (
-              <span aria-disabled="true" className={`${base} text-tinta-2`}>
-                <Icone d={aba.icone} />
-                <span>
-                  {aba.rotulo}
-                  <span className="sr-only">, </span>
-                  <span className="block text-[0.625rem] font-normal md:ml-1 md:inline">em breve</span>
-                </span>
+                {aba.aviso > 0 && (
+                  <span
+                    data-testid="nao-lidas"
+                    className="bg-petroleo text-sobre-petroleo absolute -top-1.5 left-3.5 min-w-5 rounded-full px-1 text-center text-[0.75rem] leading-5 font-bold"
+                    aria-hidden="true"
+                  >
+                    {aba.aviso > 99 ? "99+" : aba.aviso}
+                  </span>
+                )}
               </span>
-            )}
+              <span>
+                {aba.rotulo}
+                {aba.aviso > 0 && (
+                  <span className="sr-only">
+                    , {aba.aviso} {aba.aviso === 1 ? "não lida" : "não lidas"}
+                  </span>
+                )}
+              </span>
+            </Link>
           </li>
         ))}
       </ul>

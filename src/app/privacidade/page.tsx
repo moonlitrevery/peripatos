@@ -51,6 +51,15 @@ export default function Privacidade() {
           <strong>O que você faz no app.</strong> Posts, quem você segue, quem você bloqueou e as denúncias que fez.
         </li>
         <li>
+          <strong>Mensagens diretas.</strong> O texto e os GIFs das conversas que você tem com quem você segue e que
+          te segue de volta, para entregá-las à outra pessoa. Guardamos também até onde você leu cada conversa, só
+          para mostrar a você o que é novo.
+        </li>
+        <li>
+          <strong>Notificações, se você ativar.</strong> O endereço que o seu navegador cria para receber avisos neste
+          aparelho. Você desliga quando quiser em Configurações.
+        </li>
+        <li>
           <strong>Registros técnicos.</strong> Os serviços que hospedam o app registram endereço IP, data e hora dos
           acessos, por segurança e por obrigação legal (Marco Civil da Internet, art. 15). O Peripatos não grava em
           seus registros código de acesso, e-mail, RA nem tokens.
@@ -66,6 +75,41 @@ export default function Privacidade() {
         </li>
         <li>Quem você bloqueou não é avisado, e quem você denunciou não sabe que foi você.</li>
       </ul>
+
+      <h2>Mensagens diretas</h2>
+      <ul>
+        <li>
+          <strong>Só as duas pessoas da conversa leem as mensagens.</strong> A moderação e a administração não têm
+          acesso a conversas.
+        </li>
+        <li>
+          <strong>Não existe confirmação de leitura nem aviso de &ldquo;digitando&rdquo;.</strong> A outra pessoa não
+          fica sabendo se você abriu a conversa. O registro de até onde você leu é visível só para você.
+        </li>
+        <li>
+          <strong>Se você denunciar uma mensagem</strong>, uma cópia dela (e só dela) vai para a moderação, junto com
+          quem a enviou. O resto da conversa continua fora do alcance da moderação. Do mesmo modo, uma mensagem sua
+          pode ser copiada para a moderação se a outra pessoa a denunciar.
+        </li>
+        <li>
+          Você pode apagar uma mensagem sua: ela some para os dois. Se ela já tiver sido denunciada, a cópia da
+          denúncia permanece.
+        </li>
+        <li>Se vocês deixarem de se seguir, a conversa continua legível para os dois, mas não aceita mensagens novas.</li>
+        <li>Se um bloquear o outro, a conversa deixa de aparecer para os dois.</li>
+        <li>
+          As mensagens não têm criptografia de ponta a ponta: ficam guardadas no nosso banco de dados, protegidas
+          pelas regras de acesso acima.
+        </li>
+      </ul>
+
+      <h2>Notificações</h2>
+      <p>
+        Se você ativar, avisamos quando chega uma mensagem. <strong>A notificação diz só de quem é</strong>, nunca o
+        que a pessoa escreveu. Ela é entregue pelo serviço de notificações do seu navegador ou sistema (Google, Mozilla,
+        Apple ou Microsoft), que recebe o aviso cifrado e sabe que o seu aparelho recebeu uma notificação do Peripatos.
+        No iPhone e no iPad, só funciona com o Peripatos instalado na tela de início.
+      </p>
 
       <h2>Tags sensíveis</h2>
       <p>
@@ -113,6 +157,10 @@ export default function Privacidade() {
           código.
         </li>
         <li>
+          <strong>Serviços de notificação dos navegadores</strong> (Google, Mozilla, Apple, Microsoft): só se você
+          ativar as notificações. Recebem um aviso cifrado com o nome de quem te escreveu.
+        </li>
+        <li>
           <strong>Giphy</strong> (Giphy, Inc.): busca e exibição de GIFs. As buscas saem do nosso servidor, sem dizer
           quem você é. Mas <strong>a imagem do GIF é carregada pelo seu navegador direto dos servidores do Giphy</strong>,
           que por isso enxerga seu endereço IP e o tipo de navegador, tanto ao escolher um GIF quanto ao ver um post
@@ -152,7 +200,7 @@ export default function Privacidade() {
         </li>
         <li>
           <strong>Exclusão.</strong> Em Configurações, &ldquo;Excluir minha conta&rdquo; apaga de vez seu perfil, posts,
-          gostos, seguidores, bloqueios, foto e seu login.
+          gostos, seguidores, bloqueios, foto, suas conversas (com as mensagens dos dois lados) e seu login.
         </li>
         <li>
           <strong>Reclamar.</strong> Se achar que seus dados foram tratados de forma errada, fale com o encarregado.

@@ -40,10 +40,11 @@ if [ "$usuarios" != "0" ]; then
 fi
 
 {
-  # As migrations já criaram a instituição, o domínio e as tags. O backup traz
+  # As migrations já criaram a instituição, o domínio, as tags e a lista de
+  # serviços de push. O backup traz
   # os mesmos registros com os ids originais: saem os da migration.
   echo 'set client_min_messages = warning;'
-  echo 'truncate public.institutions, public.tags cascade;'
+  echo 'truncate public.institutions, public.tags, private.push_hosts cascade;'
   gpg --batch --quiet --decrypt "$arquivo"
   # As fotos não fazem parte do backup. Um perfil apontando para um arquivo
   # que não existe ficaria quebrado: todos voltam ao avatar pronto.

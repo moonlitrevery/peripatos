@@ -28,7 +28,10 @@ O `supabase/config.toml` configura só o Supabase **local**. No projeto hospedad
 | Confirmação de e-mail, login anônimo, telefone | `[auth]`, `[auth.email]`, `[auth.sms]` | **Painel** (passo 6) |
 | Site URL | `[auth] site_url` (local: `127.0.0.1:3000`) | **Painel** (passo 11) |
 | **Verificação em duas etapas (TOTP)** | `[auth.mfa.totp]` | **Painel** (passo 6). O banco exige aal2 da staff |
-| Origem aceita pela Edge Function | não está no `config.toml` | **Comando** `supabase secrets set` (passo 9) |
+| Origem aceita pelas Edge Functions | não está no `config.toml` | **Comando** `supabase secrets set` (passo 9) |
+| **Chaves das notificações push (VAPID)** | não estão no repositório | **Comando** e **Painel** (passo 9a) |
+| **Realtime só com canais privados** | não está no `config.toml` | **Painel** (passo 5) |
+| Edge Function `notificar-mensagem` | `supabase/functions/` | `supabase functions deploy` (passo 9a) |
 | Schemas expostos pela API | `[api] schemas = ["public"]` | **Painel** (passo 5) |
 | Dados de teste (`supabase/seed.sql`) | — | **Não sobem**, de propósito |
 
@@ -108,6 +111,7 @@ Regras:
 
 - [ ] *Project Settings → Data API → Exposed schemas*: só **`public`**. O schema `private` **nunca** entra nessa lista (ele guarda e-mail, RA e data de nascimento).
 - [ ] *Max rows*: `1000`.
+- [ ] *Realtime → Settings*: desligue **Allow public access** (ou o nome equivalente), para o Realtime aceitar só canais privados, que passam pela autorização do banco. O app não depende disso para a privacidade das mensagens (o banco só publica em canais privados, e o evento não leva o texto), mas é uma camada a mais e fecha o Realtime para usos que o app não tem.
 
 ## 6. Auth: provedores, código e hook — [painel]
 
@@ -197,6 +201,33 @@ pnpm exec supabase functions deploy processar-avatar
 - Ela recebe `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` do próprio Supabase. Você não cadastra nenhum segredo.
 - [ ] **[painel]** *Edge Functions*: `processar-avatar` aparece como ativa, com *Verify JWT* ligado.
 
+## 9a. Notificações push — [comando] e [painel]
+
+As notificações usam um par de chaves (VAPID). A pública vai para o navegador; a privada fica **só** como segredo da Edge Function.
+
+- [ ] **[comando]** Gere o par. Ele é impresso na tela e não é gravado em arquivo:
+
+  ```bash
+  node scripts/gerar-vapid.mjs --mostrar
+  ```
+
+- [ ] **[comando]** Cadastre no Supabase e publique a função:
+
+  ```bash
+  pnpm exec supabase secrets set VAPID_PUBLIC_KEY=<pública> VAPID_PRIVATE_KEY=<privada> VAPID_SUBJECT=mailto:<seu e-mail de contato>
+  pnpm exec supabase functions deploy notificar-mensagem
+  ```
+
+- [ ] **[painel, Vercel]** `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = a chave **pública** (passo 10), e *Redeploy*.
+- [ ] Guarde a chave privada no gerenciador de senhas. **Trocar o par desliga as notificações de todo mundo**: cada pessoa teria que ativar de novo.
+
+O que saber:
+
+- **A notificação nunca leva o conteúdo da mensagem.** Diz só "Nova mensagem de <nome>". Há um teste que decifra a notificação e confere.
+- **iPhone e iPad:** só funciona com o Peripatos **instalado na tela de início** (Safari → Compartilhar → Adicionar à Tela de Início), a partir do iOS 16.4. No Safari comum a opção nem aparece; a tela de Configurações explica isso para a pessoa.
+- A função só entrega para os serviços de push dos navegadores (lista em `private.push_hosts`). Se um navegador novo usar outro endereço, a inscrição é recusada com "Endereço de notificação não reconhecido": acrescente o padrão numa migration.
+- Sem as chaves, o app funciona normalmente e a seção de Notificações diz que elas não estão configuradas.
+
 ## 10. Vercel — [painel]
 
 - [ ] Importe o repositório. Framework: Next.js. Gerenciador: pnpm (detectado pelo `packageManager`).
@@ -207,10 +238,11 @@ pnpm exec supabase functions deploy processar-avatar
 | `NEXT_PUBLIC_SUPABASE_URL` | **Pública** (vai para o navegador) | a Project URL do passo 1 |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | **Pública** (vai para o navegador) | a chave publishable/anon do passo 1 |
 | `GIPHY_API_KEY` | **Só servidor**; marque como *Sensitive* | a chave do Giphy |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | **Pública** (vai para o navegador) | a chave VAPID **pública** do passo 9a |
 
 Regras:
 
-- **Nada além dessas três.** A chave `secret`/`service_role`, a senha do banco e a senha de app do Gmail **não** vão para o Vercel: o app não usa nenhuma delas.
+- **Nada além dessas quatro.** A chave VAPID **privada** não vai para o Vercel: fica só no Supabase. A chave `secret`/`service_role`, a senha do banco e a senha de app do Gmail **não** vão para o Vercel: o app não usa nenhuma delas.
 - **Não instale a integração Supabase do Vercel.** Ela cadastra sozinha a service role e a URL do banco como variáveis. Se já instalou, apague essas variáveis.
 - Nunca dê o prefixo `NEXT_PUBLIC_` a um segredo: tudo com esse prefixo é embutido no JavaScript que o navegador baixa.
 - As `NEXT_PUBLIC_` são gravadas no build. Mudou uma, faça *Redeploy*.
@@ -236,7 +268,7 @@ O script:
 - confere que **a chave anon não lê nem escreve em nenhuma tabela** e não chama nenhuma função (as listas saem das migrations do repositório);
 - confere que **o schema `private` não está exposto** e que nenhuma tabela dele aparece em `public`;
 - confere que os buckets não são públicos e não listam arquivos;
-- confere que a Edge Function recusa quem não está logado;
+- confere que as duas Edge Functions recusam quem não está logado, e que o CORS delas é uma origem válida;
 - confere login anônimo, telefone e provedores sociais desligados, e confirmação de e-mail ligada.
 
 Tem que terminar em `PASSOU: 0 falha(s)`. O mesmo script roda no CI contra o Supabase local.
@@ -253,6 +285,7 @@ Com um e-mail institucional de verdade:
 - [ ] Peça o código. O e-mail chega com **6 dígitos e sem link**.
 - [ ] Um e-mail de fora (`@gmail.com`) é recusado com a mensagem do banco.
 - [ ] Conclua o onboarding, publique um post, busque um GIF.
+- [ ] Com duas contas que se seguem: mande uma mensagem e veja chegar na outra sem recarregar. Ative as notificações num celular e confira que o aviso diz só de quem é.
 - [ ] Envie uma foto de avatar: ela fica pendente.
 - [ ] **Primeiro admin**, no *SQL Editor*:
 

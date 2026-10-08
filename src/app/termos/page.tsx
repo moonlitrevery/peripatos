@@ -50,9 +50,20 @@ export default function Termos() {
         <li>Revelar a alguém de fora o que você só vê porque duas pessoas se seguem (as tags com cadeado).</li>
       </ul>
 
+      <h2>Mensagens diretas</h2>
+      <ul>
+        <li>Só dá para conversar com quem você segue e que te segue de volta. Não há grupos.</li>
+        <li>As mesmas regras valem nas conversas: assédio, ameaça e exposição de terceiros não são permitidos.</li>
+        <li>
+          A moderação não lê conversas. Ela só vê uma mensagem quando quem a recebeu denuncia: aí recebe uma cópia
+          daquela mensagem.
+        </li>
+        <li>Insistir depois que a pessoa deixou de te seguir ou te bloqueou, por qualquer meio, é assédio.</li>
+      </ul>
+
       <h2>O que acontece se alguém descumprir</h2>
       <ul>
-        <li>Qualquer pessoa pode denunciar um post ou um perfil. Quem foi denunciado não fica sabendo quem denunciou.</li>
+        <li>Qualquer pessoa pode denunciar um post, um perfil ou uma mensagem que recebeu. Quem foi denunciado não fica sabendo quem denunciou.</li>
         <li>A moderação pode ocultar posts, recusar fotos de perfil e banir contas.</li>
         <li>
           Uma conta banida perde o acesso e o e-mail não consegue se cadastrar de novo. Excluir a conta não desfaz o

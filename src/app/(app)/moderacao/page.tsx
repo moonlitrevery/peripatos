@@ -24,7 +24,7 @@ export default async function Moderacao() {
   const [denuncias, pendentes] = await Promise.all([
     supabase
       .from("reports")
-      .select("id, reason, details, status, created_at, post_id, profile_id")
+      .select("id, reason, details, status, created_at, post_id, profile_id, message_id, message_sender_id, message_body, message_gif_id, message_gif_alt, message_sent_at")
       .in("status", ["aberta", "em_analise"])
       .order("created_at", { ascending: true })
       .limit(50),
@@ -45,7 +45,11 @@ export default async function Moderacao() {
   const postPorId = new Map((posts ?? []).map((p) => [p.id, p]));
 
   const idsPerfis = [
-    ...new Set([...lista.flatMap((d) => (d.profile_id ? [d.profile_id] : [])), ...(posts ?? []).map((p) => p.author_id)]),
+    ...new Set([
+      ...lista.flatMap((d) => (d.profile_id ? [d.profile_id] : [])),
+      ...lista.flatMap((d) => (d.message_sender_id ? [d.message_sender_id] : [])),
+      ...(posts ?? []).map((p) => p.author_id),
+    ]),
   ];
   const { data: perfis } = await supabase.from("profiles").select("id, username, display_name, bio, banned_at").in("id", idsPerfis);
   const perfilPorId = new Map((perfis ?? []).map((p) => [p.id, p]));
@@ -75,7 +79,8 @@ export default async function Moderacao() {
         <ul className="flex flex-col gap-4">
           {lista.map((d) => {
             const post = d.post_id ? postPorId.get(d.post_id) : undefined;
-            const alvoId = post?.author_id ?? d.profile_id;
+            const alvoId = post?.author_id ?? d.profile_id ?? d.message_sender_id;
+            const ehMensagem = d.message_id !== null;
             const alvo = alvoId ? perfilPorId.get(alvoId) : undefined;
             return (
               <li key={d.id}>
@@ -83,7 +88,7 @@ export default async function Moderacao() {
                   <header className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="text-lg font-bold">{rotuloDoMotivo(d.reason)}</h3>
                     <p className="fino">
-                      {d.post_id ? "Post" : "Perfil"} · <time dateTime={d.created_at}>{haQuantoTempo(d.created_at)}</time>
+                      {d.post_id ? "Post" : ehMensagem ? "Mensagem" : "Perfil"} · <time dateTime={d.created_at}>{haQuantoTempo(d.created_at)}</time>
                     </p>
                   </header>
                   {d.details && (
@@ -95,7 +100,7 @@ export default async function Moderacao() {
 
                   <div className="border-linha bg-fundo flex flex-col gap-2 rounded-2xl border p-3">
                     <p className="fino">
-                      {post ? "Post de " : "Perfil de "}
+                      {post ? "Post de " : ehMensagem ? "Mensagem de " : "Perfil de "}
                       {alvo ? (
                         <Link href={`/u/${alvo.username}`} className="text-petroleo font-semibold underline underline-offset-4">
                           {alvo.display_name} (@{alvo.username})
@@ -109,7 +114,16 @@ export default async function Moderacao() {
                     </p>
                     {post && post.body && <p className="break-words whitespace-pre-wrap">{post.body}</p>}
                     {post?.gif_id && <Gif id={post.gif_id} alt={post.gif_alt} />}
-                    {!post && alvo?.bio && <p className="break-words whitespace-pre-wrap">{alvo.bio}</p>}
+                    {ehMensagem && (
+                      <>
+                        {d.message_body && <p className="break-words whitespace-pre-wrap">{d.message_body}</p>}
+                        {d.message_gif_id && <Gif id={d.message_gif_id} alt={d.message_gif_alt} />}
+                        <p className="fino">
+                          Cópia feita no momento da denúncia. Você não tem acesso ao resto da conversa.
+                        </p>
+                      </>
+                    )}
+                    {!post && !ehMensagem && alvo?.bio && <p className="break-words whitespace-pre-wrap">{alvo.bio}</p>}
                     {d.post_id && !post && <p className="text-tinta-2">O post não está mais disponível.</p>}
                   </div>
 

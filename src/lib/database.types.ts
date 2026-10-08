@@ -30,6 +30,56 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"conversation_reads": {
+                  Row: {
+                    "conversation_id": string,"last_read_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "conversation_id": string,"last_read_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "conversation_id"?: string,"last_read_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conversation_reads_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversation_reads_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"conversations": {
+                  Row: {
+                    "created_at": string,"id": string,"institution_id": string,"last_message_at": string | null,"user_a": string,"user_b": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"institution_id": string,"last_message_at"?: string | null,"user_a": string,"user_b": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"institution_id"?: string,"last_message_at"?: string | null,"user_a"?: string,"user_b"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conversations_user_a_institution_id_fkey"
+      columns: ["user_a","institution_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id","institution_id"]
+    },{
+      foreignKeyName: "conversations_user_b_institution_id_fkey"
+      columns: ["user_b","institution_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id","institution_id"]
+    }
+                  ]
                 },"follows": {
                   Row: {
                     "created_at": string,"followee_id": string,"follower_id": string
@@ -67,6 +117,31 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"messages": {
+                  Row: {
+                    "body": string,"conversation_id": string,"created_at": string,"gif_alt": string | null,"gif_id": string | null,"id": string,"notified_at": string | null,"sender_id": string
+                  }
+                  Insert: {
+                    "body"?: string,"conversation_id": string,"created_at"?: string,"gif_alt"?: string | null,"gif_id"?: string | null,"id"?: string,"notified_at"?: string | null,"sender_id"?: string
+                  }
+                  Update: {
+                    "body"?: string,"conversation_id"?: string,"created_at"?: string,"gif_alt"?: string | null,"gif_id"?: string | null,"id"?: string,"notified_at"?: string | null,"sender_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "messages_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "messages_sender_id_fkey"
+      columns: ["sender_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"moderation_actions": {
                   Row: {
@@ -205,18 +280,43 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"reports": {
+                },"push_subscriptions": {
                   Row: {
-                    "created_at": string,"details": string | null,"id": string,"institution_id": string,"post_id": string | null,"profile_id": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": Database["public"]['Enums']["report_status"]
+                    "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"user_id": string
                   }
                   Insert: {
-                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"post_id"?: string | null,"profile_id"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                    "auth": string,"created_at"?: string,"endpoint": string,"id"?: string,"p256dh": string,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"post_id"?: string | null,"profile_id"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                    "auth"?: string,"created_at"?: string,"endpoint"?: string,"id"?: string,"p256dh"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "push_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"reports": {
+                  Row: {
+                    "created_at": string,"details": string | null,"id": string,"institution_id": string,"message_body": string | null,"message_gif_alt": string | null,"message_gif_id": string | null,"message_id": string | null,"message_sender_id": string | null,"message_sent_at": string | null,"post_id": string | null,"profile_id": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": Database["public"]['Enums']["report_status"]
+                  }
+                  Insert: {
+                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"message_body"?: string | null,"message_gif_alt"?: string | null,"message_gif_id"?: string | null,"message_id"?: string | null,"message_sender_id"?: string | null,"message_sent_at"?: string | null,"post_id"?: string | null,"profile_id"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                  }
+                  Update: {
+                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"message_body"?: string | null,"message_gif_alt"?: string | null,"message_gif_id"?: string | null,"message_id"?: string | null,"message_sender_id"?: string | null,"message_sent_at"?: string | null,"post_id"?: string | null,"profile_id"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reports_message_sender_id_fkey"
+      columns: ["message_sender_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "reports_post_id_fkey"
       columns: ["post_id"]
 isOneToOne: false
@@ -311,7 +411,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "afinidade":
+            "abrir_conversa":
+{ Args: { "p_outro": string }; Returns: string
+                           },
+"afinidade":
 { Args: { "p_outro": string }; Returns: number
                            },
 "apagar_post":
@@ -332,6 +435,9 @@ isOneToOne: false
 "definir_cargo":
 { Args: { "p_motivo": string,"p_papel": Database["public"]['Enums']["staff_role"],"p_user_id": string }; Returns: undefined
                            },
+"denunciar_mensagem":
+{ Args: { "p_detalhe"?: string,"p_mensagem": string,"p_motivo": Database["public"]['Enums']["report_reason"] }; Returns: string
+                           },
 "desbanir_usuario":
 { Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
@@ -343,9 +449,17 @@ isOneToOne: false
               "afinidade": number,"author_id": string,"avatar_path": string,"avatar_preset": number,"body": string,"created_at": string,"display_name": string,"edited_at": string,"gif_alt": string,"gif_id": string,"next_cursor": string,"origem": string,"post_id": string,"score": number,"username": string
             }[]
                            },
+"marcar_conversa_lida":
+{ Args: { "p_conversa": string }; Returns: undefined
+                           },
 "meus_bloqueios":
 { Args: Record<PropertyKey, never>; Returns: {
               "bloqueado_em": string,"display_name": string,"user_id": string,"username": string
+            }[]
+                           },
+"minhas_conversas":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "aberta": boolean,"avatar_path": string,"avatar_preset": number,"conversa_id": string,"display_name": string,"nao_lidas": number,"outro_id": string,"previa": string,"previa_minha": boolean,"ultima_em": string,"username": string
             }[]
                            },
 "minhas_denuncias":
@@ -381,6 +495,9 @@ isOneToOne: false
                            },
 "revogar_tags_sensiveis":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"total_nao_lidas":
+{ Args: Record<PropertyKey, never>; Returns: number
                            }
           }
           Enums: {
