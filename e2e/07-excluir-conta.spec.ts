@@ -10,6 +10,8 @@ test("excluir a conta apaga o login, o perfil, os posts e só as mensagens de qu
   await page.getByLabel("O que você quer conversar?").fill(texto);
   await page.getByRole("button", { name: "Publicar" }).click();
   await expect(page.getByRole("article").filter({ hasText: texto })).toBeVisible();
+  // Otimista: o post aparece antes de o servidor confirmar. "Apagar" é a confirmação.
+  await expect(page.getByRole("article").filter({ hasText: texto }).getByRole("button", { name: "Apagar" })).toBeVisible();
 
   // Outra pessoa vê o perfil e o post enquanto a conta existe.
   const daLia = await contextoDe(browser, "lia");

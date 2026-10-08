@@ -44,6 +44,9 @@ test.describe("Início", () => {
     await expect(noInicio).toBeVisible();
     await expect(noInicio.getByAltText("GIF: Gato de teste", { exact: true })).toHaveAttribute("src", `https://i.giphy.com/${GIF_ID}.webp`);
     await expect(page.getByLabel("O que você quer conversar?")).toHaveValue("");
+    // O post aparece na hora (otimista). "Apagar" só surge quando o servidor
+    // confirma que gravou: é o sinal de que dá para sair da tela.
+    await expect(noInicio.getByRole("button", { name: "Apagar" })).toBeVisible();
 
     // Recarregando do banco: o post existe e a URL do GIF foi remontada a
     // partir do ID guardado.

@@ -7,10 +7,13 @@ const POST_DO_BETO = "Fechando time para o interclasses. Falta goleiro.";
 async function carregarOFeedInteiro(page: Page) {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Início" })).toBeVisible();
+  // O título já aparece no esqueleto da tela; espera o feed de verdade.
+  await expect(page.locator("[data-esqueleto]")).toHaveCount(0);
+  await expect(page.getByRole("tablist", { name: "O que mostrar no Início" })).toBeVisible();
   const fim = page.getByText("Você chegou ao fim. Volte mais tarde.");
   const mais = page.getByRole("button", { name: "Carregar mais" });
   for (let i = 0; i < 30 && !(await fim.isVisible()); i++) {
-    if (await mais.isEnabled().catch(() => false)) await mais.click().catch(() => {});
+    if ((await mais.count()) > 0 && (await mais.isEnabled().catch(() => false))) await mais.click().catch(() => {});
     await page.waitForTimeout(300);
   }
   await expect(fim).toBeVisible();

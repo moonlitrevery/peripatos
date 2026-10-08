@@ -89,6 +89,8 @@ test("termos desatualizados: vê o que mudou, e só continua depois de aceitar",
   await page2.getByLabel("O que você quer conversar?").fill(texto);
   await page2.getByRole("button", { name: "Publicar" }).click();
   await expect(page2.getByRole("article").filter({ hasText: texto })).toBeVisible();
+  // O post aparece na hora; "Apagar" é a prova de que o servidor aceitou.
+  await expect(page2.getByRole("article").filter({ hasText: texto }).getByRole("button", { name: "Apagar" })).toBeVisible();
   // Com os termos em dia a tela de aceite não aparece mais.
   await page2.goto("/aceite");
   await expect(page2).toHaveURL("/");
