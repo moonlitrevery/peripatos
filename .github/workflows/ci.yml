@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4 # versão do campo packageManager
+      - uses: pnpm/action-setup@v6 # versão do campo packageManager
 
       - uses: actions/setup-node@v4
         with:
