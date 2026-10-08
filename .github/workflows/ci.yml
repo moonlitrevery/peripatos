@@ -63,6 +63,12 @@ jobs:
       - name: EXIF (re-encode do avatar, em Deno)
         run: pnpm test:exif
 
+      # Chaves VAPID só deste runner, geradas agora: a pública vai para o
+      # .env.local e a privada para supabase/functions/.env, que a Edge
+      # Function de notificação lê. Precisa vir antes do `supabase start`.
+      - name: Chaves das notificações push (descartáveis)
+        run: node scripts/gerar-vapid.mjs
+
       # Studio, logs e pooler não participam de nenhum teste.
       - name: Supabase local
         run: pnpm exec supabase start -x studio,logflare,vector,imgproxy,supavisor
@@ -78,7 +84,7 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_URL=$(valor API_URL)"
             echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$chave"
             echo "GIPHY_API_KEY="
-          } > .env.local
+          } >> .env.local   # acrescenta: a chave VAPID pública já está lá
           rm "$RUNNER_TEMP/status.env"
 
       # Só mexe no Kong se o gateway não estiver respondendo (rede com

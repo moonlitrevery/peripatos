@@ -1,29 +1,9 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { ARQUIVO_DA_STAFF_AAL2, contextoDe, entrar, pessoaNova } from "./apoio";
+import { ARQUIVO_DA_STAFF_AAL2, contextoDe, entrar, examinarAxe as examinar, pessoaNova, type AchadoAxe as Achado } from "./apoio";
 
 // axe-core em todas as telas principais, nos dois temas. O critério é zero
 // violação séria ou crítica das regras WCAG 2.1 A e AA (contraste incluído).
 // De quebra, confere que nenhuma tela dispara violação da CSP.
-
-const REGRAS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
-
-type Achado = { tela: string; regra: string; impacto: string; alvo: string; resumo: string };
-
-async function examinar(page: Page, tela: string, achados: Achado[]) {
-  // As fontes entram com display: swap; espera para medir o contraste do texto final.
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  const resultado = await new AxeBuilder({ page }).withTags(REGRAS).analyze();
-  // Se o axe não avaliou nada, o "zero violações" não quer dizer nada.
-  expect(resultado.passes.length, `axe não avaliou ${tela}`).toBeGreaterThan(5);
-  expect(resultado.passes.some((r) => r.id === "color-contrast"), `contraste não avaliado em ${tela}`).toBe(true);
-  for (const v of resultado.violations) {
-    if (v.impact !== "serious" && v.impact !== "critical") continue;
-    for (const n of v.nodes) {
-      achados.push({ tela, regra: v.id, impacto: v.impact, alvo: n.target.join(" "), resumo: n.failureSummary ?? v.help });
-    }
-  }
-}
 
 function vigiarCsp(page: Page, violacoes: string[]) {
   page.on("console", (m) => {

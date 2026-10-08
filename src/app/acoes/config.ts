@@ -107,6 +107,18 @@ export async function removerFoto(): Promise<Resultado> {
   return ok(undefined);
 }
 
+// Registra o aceite da versão vigente dos Termos e da Política. O banco
+// confere de novo que a versão enviada é a que está valendo.
+export async function aceitarTermos(versaoBruta: unknown): Promise<Resultado> {
+  const r = v.validar(z.string().max(40), versaoBruta);
+  if (!r.ok) return r.falha;
+  const { supabase, user } = await sessao();
+  if (!user) return falha(SEM_SESSAO);
+  const { error } = await supabase.rpc("aceitar_termos", { p_versao: r.dado });
+  if (error) return falha(mensagemDeErro(error, "Não foi possível registrar o aceite. Tente de novo."));
+  redirect("/");
+}
+
 export async function excluirConta(confirmacao: unknown): Promise<Resultado> {
   const r = v.validar(z.string().max(20), confirmacao);
   if (!r.ok || r.dado.trim() !== "EXCLUIR") return falha("Digite EXCLUIR, em maiúsculas, para confirmar.");

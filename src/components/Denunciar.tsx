@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
+import { denunciarMensagem } from "@/app/acoes/mensagens";
 import { denunciar } from "@/app/acoes/social";
 import { Dialogo } from "@/components/Dialogo";
 import { MOTIVOS, type MotivoDenuncia } from "@/lib/denuncias";
 
 type Props = {
-  alvo: { postId: string } | { perfilId: string };
+  alvo: { postId: string } | { perfilId: string } | { mensagemId: string };
   /** Texto do botão que abre o diálogo. */
   rotulo?: string;
   className?: string;
@@ -19,7 +20,10 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
   const [erro, setErro] = useState<string | null>(null);
   const [enviada, setEnviada] = useState(false);
   const [pendente, iniciar] = useTransition();
-  const ehPost = "postId" in alvo;
+  // Numa conversa ou no feed há um destes por item: os campos precisam de
+  // ids próprios, senão o rótulo de um aponta para o campo de outro.
+  const id = useId();
+  const oQue = "postId" in alvo ? "este post" : "mensagemId" in alvo ? "esta mensagem" : "este perfil";
 
   function fechar() {
     setAberto(false);
@@ -36,7 +40,7 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
       <button type="button" className={className} onClick={() => setAberto(true)}>
         {rotulo}
       </button>
-      <Dialogo aberto={aberto} aoFechar={fechar} titulo={ehPost ? "Denunciar este post" : "Denunciar este perfil"}>
+      <Dialogo aberto={aberto} aoFechar={fechar} titulo={`Denunciar ${oQue}`}>
         {enviada ? (
           <>
             <p role="status">Denúncia enviada. A moderação da sua instituição vai analisar.</p>
@@ -52,19 +56,25 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
               if (!motivo) return setErro("Escolha um motivo.");
               setErro(null);
               iniciar(async () => {
-                const r = await denunciar(alvo, motivo, detalhe);
+                const r =
+                  "mensagemId" in alvo ? await denunciarMensagem(alvo.mensagemId, motivo, detalhe) : await denunciar(alvo, motivo, detalhe);
                 if (r.ok) setEnviada(true);
                 else setErro(r.erro);
               });
             }}
           >
             <p className="fino">Quem foi denunciado não fica sabendo que foi você.</p>
+            {"mensagemId" in alvo && (
+              <p className="fino">
+                A moderação recebe uma cópia desta mensagem, e só dela. Ela não tem acesso ao resto da conversa.
+              </p>
+            )}
             <div>
-              <label htmlFor="denuncia-motivo" className="rotulo">
+              <label htmlFor={`${id}-motivo`} className="rotulo">
                 Motivo
               </label>
               <select
-                id="denuncia-motivo"
+                id={`${id}-motivo`}
                 className="campo"
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value as MotivoDenuncia)}
@@ -81,11 +91,11 @@ export function Denunciar({ alvo, rotulo = "Denunciar", className = "btn btn-qui
               </select>
             </div>
             <div>
-              <label htmlFor="denuncia-detalhe" className="rotulo">
+              <label htmlFor={`${id}-detalhe`} className="rotulo">
                 Conte o que aconteceu <span className="text-tinta-2 font-normal">(opcional)</span>
               </label>
               <textarea
-                id="denuncia-detalhe"
+                id={`${id}-detalhe`}
                 className="campo"
                 rows={3}
                 maxLength={1000}

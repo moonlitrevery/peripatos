@@ -31,7 +31,10 @@ test.describe("Segurança", () => {
         // usuário poderia ser "javascript:".
         // Os únicos permitidos: /u/<username> (o username é [a-z0-9_] por
         // constraint do banco) e as abas fixas da navegação.
-        if (/href=\{/.test(linha) && !/href=\{(`\/u\/\$\{[\w.]+\}`|aba\.href)\}/.test(linha)) {
+        // TextoComLinks é o único lugar que cria link a partir de texto do
+        // usuário, e só aceita http e https (conferido em 14-mensagens).
+        const permitido = /href=\{(`\/(u|mensagens)\/\$\{[\w.]+\}`|aba\.href)\}/.test(linha) || arquivo.endsWith("TextoComLinks.tsx");
+        if (/href=\{/.test(linha) && !permitido) {
           achados.push(`${onde} href dinâmico: ${linha.trim()}`);
         }
       });

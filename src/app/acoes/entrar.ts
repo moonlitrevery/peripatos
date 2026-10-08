@@ -39,13 +39,13 @@ export async function verificarCodigo(emailBruto: unknown, codigoBruto: unknown)
     return falha("Código inválido ou expirado. Confira os dígitos ou peça outro.");
   }
 
-  // Quem ainda não fez o onboarding vai direto para lá. Deixar isso para o
-  // proxy funciona, mas ele reescreve o destino de um redirect de server
-  // action sem trocar o endereço: a tela certa apareceria sob a URL "/".
-  const { data: perfil } = data.user
-    ? await supabase.from("profiles").select("onboarding_completo").eq("id", data.user.id).maybeSingle()
-    : { data: null };
-  redirect(perfil?.onboarding_completo === true ? "/" : "/onboarding");
+  // Para onde ir: onboarding, novo aceite dos termos ou Início. Deixar isso
+  // para o proxy funciona, mas ele reescreve o destino de um redirect de
+  // server action sem trocar o endereço: a tela certa apareceria sob a URL "/".
+  const { data: status } = data.user ? await supabase.rpc("conta_status") : { data: null };
+  const conta = status as { onboarding_completo?: boolean; termos_em_dia?: boolean } | null;
+  if (conta?.onboarding_completo !== true) redirect("/onboarding");
+  redirect(conta.termos_em_dia === true ? "/" : "/aceite");
 }
 
 // Encerra a sessão deste aparelho.

@@ -256,12 +256,16 @@ for (const b of BUCKETS) {
   else falha(`${b}: o bucket parece PÚBLICO (a URL pública respondeu "${resumo(publico)}"). Ele precisa ser privado`);
 }
 
-titulo("6. Edge Function processar-avatar");
+titulo("6. Edge Functions");
+for (const funcao of ["processar-avatar", "notificar-mensagem"]) {
+  const r = await pedir(`/functions/v1/${funcao}`, { method: "POST", body: "{}" });
+  // processar-avatar exige o token do usuário; notificar-mensagem exige o
+  // segredo do banco. Sem um nem outro, as duas respondem 401.
+  if (r.status === 401) ok(`${funcao}: recusa quem chega sem credencial (401)`);
+  else if (r.status === 404) falha(`${funcao}: não está publicada (404): rode \`supabase functions deploy ${funcao}\``);
+  else falha(`${funcao}: sem login respondeu: ${resumo(r)}`);
+}
 {
-  const r = await pedir("/functions/v1/processar-avatar", { method: "POST", body: "{}" });
-  if (r.status === 401) ok("recusa quem não está logado (401)");
-  else if (r.status === 404) falha("a função não está publicada (404): rode `supabase functions deploy processar-avatar`");
-  else falha(`sem login a função respondeu: ${resumo(r)}`);
 
   // CORS: um valor que não é uma origem válida bloqueia todo envio de foto.
   const pre = await fetch(`${URL_BASE}/functions/v1/processar-avatar`, {

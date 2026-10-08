@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigirSessao, meuCargo, meuPerfil } from "@/lib/sessao";
 import { deLinha } from "@/lib/tags";
+import { Notificacoes } from "./Notificacoes";
 import { Bloqueados, ExcluirConta, FormAvatar, FormPerfil, FormTags, Sessoes } from "./Formularios";
 
 export const metadata: Metadata = { title: "Configurações" };
@@ -66,6 +67,13 @@ export default async function Config() {
         <Bloqueados
           lista={(bloqueios.data ?? []).map((b) => ({ id: b.user_id, username: b.username, nome: b.display_name }))}
         />
+      </section>
+
+      <section className={secao} id="notificacoes" aria-labelledby="t-notificacoes">
+        <h2 id="t-notificacoes" className="text-xl font-bold">
+          Notificações
+        </h2>
+        <Notificacoes />
       </section>
 
       <section className={secao} aria-labelledby="t-sessoes">

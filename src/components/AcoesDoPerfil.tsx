@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { abrirConversa } from "@/app/acoes/mensagens";
 import { bloquear, removerSeguidor } from "@/app/acoes/social";
 import { BotaoSeguir } from "@/components/BotaoSeguir";
 import { Denunciar } from "@/components/Denunciar";
@@ -19,6 +20,23 @@ export function AcoesDoPerfil({ alvoId, nome, seguindo, segueVoce }: Props) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start gap-2">
         <BotaoSeguir alvoId={alvoId} nome={nome} seguindoInicial={seguindo} />
+        {/* Só aparece para mútuos. Esconder é conforto: quem tentar sem ser
+            mútuo recebe a recusa do banco. */}
+        {seguindo && segueVoce && (
+          <button
+            type="button"
+            className="btn btn-sec btn-peq"
+            disabled={pendente}
+            onClick={() =>
+              iniciar(async () => {
+                const r = await abrirConversa(alvoId);
+                if (r && !r.ok) setErro(r.erro);
+              })
+            }
+          >
+            Mensagem
+          </button>
+        )}
         {segueVoce && (
           <button
             type="button"

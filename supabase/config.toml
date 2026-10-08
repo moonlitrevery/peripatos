@@ -438,3 +438,8 @@ uri = "pg-functions://postgres/private/hook_before_user_created"
 # Re-encode de avatar (remove EXIF/GPS). Só aceita chamadas com JWT válido.
 [functions.processar-avatar]
 verify_jwt = true
+
+# Quem chama esta função é o banco (trigger em public.messages), não um
+# usuário: não há JWT. A função confere um segredo compartilhado com o banco.
+[functions.notificar-mensagem]
+verify_jwt = false
