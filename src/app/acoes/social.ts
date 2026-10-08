@@ -35,7 +35,7 @@ export async function maisFeed(
   const aba: AbaDoFeed = a.dado;
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
-  const r = await paginaDoFeed(supabase, aba, c.dado);
+  const r = await paginaDoFeed(supabase, user.id, aba, c.dado);
   if (r.erro) return falha(mensagemDeErro(r.erro));
   return ok({ itens: r.itens, proximo: r.proximo });
 }
@@ -76,13 +76,25 @@ export async function apagarPost(idBruto: unknown): Promise<Resultado> {
   return ok(undefined);
 }
 
-export async function seguir(idBruto: unknown): Promise<Resultado> {
+// `postBruto` só vem quando a pessoa seguiu a partir de um post: o banco
+// guarda de qual post veio, para a notificação de quem foi seguido, e confere
+// que o post é mesmo dessa pessoa. Se o post saiu do ar entre a tela e o
+// toque (código PT422), o follow acontece do mesmo jeito, sem origem.
+export async function seguir(idBruto: unknown, postBruto?: unknown): Promise<Resultado> {
   const id = v.validar(v.uuid, idBruto);
   if (!id.ok) return id.falha;
   const alvoId = id.dado;
+  const post = v.validar(v.uuid.optional(), postBruto ?? undefined);
+  if (!post.ok) return post.falha;
   const { supabase, user } = await sessao();
   if (!user) return falha(SEM_SESSAO);
-  const { error } = await supabase.from("follows").insert({ followee_id: alvoId });
+  // A coluna da origem só vai no pedido quando há post: seguir pelo perfil é o
+  // mesmo INSERT de sempre. PGRST204 (coluna desconhecida) cobre a janela do
+  // deploy em que o app já está no ar e a migration ainda não foi aplicada.
+  let { error } = await supabase.from("follows").insert(post.dado ? { followee_id: alvoId, via_post_id: post.dado } : { followee_id: alvoId });
+  if (post.dado && (error?.code === "PT422" || error?.code === "PGRST204")) {
+    ({ error } = await supabase.from("follows").insert({ followee_id: alvoId }));
+  }
   if (error && error.code !== "23505") return falha(mensagemDeErro(error, "Não foi possível seguir."));
   revalidatePath("/", "layout");
   return ok(undefined);

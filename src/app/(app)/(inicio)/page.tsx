@@ -6,11 +6,11 @@ import { paginaDoFeed } from "@/lib/feed";
 import { exigirSessao, meuPerfil } from "@/lib/sessao";
 
 export default async function Inicio() {
-  const { supabase } = await exigirSessao();
+  const { supabase, user } = await exigirSessao();
   // A aba que a pessoa deixou aberta da última vez, lembrada neste aparelho.
   const aba = abaValida((await cookies()).get(COOKIE_DA_ABA)?.value);
   // O perfil e a primeira página do feed não dependem um do outro: saem juntos.
-  const [perfil, { itens, proximo }] = await Promise.all([meuPerfil(), paginaDoFeed(supabase, aba, null)]);
+  const [perfil, { itens, proximo }] = await Promise.all([meuPerfil(), paginaDoFeed(supabase, user.id, aba, null)]);
   const urls = await assinarAvatares(supabase, [perfil.avatar_status === "aprovado" ? perfil.avatar_path : null]);
 
   return (

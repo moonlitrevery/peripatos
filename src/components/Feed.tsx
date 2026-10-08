@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { apagarPost, maisFeed, publicar } from "@/app/acoes/social";
+import { BotaoSeguir } from "@/components/BotaoSeguir";
 import { urlDoGif } from "@/components/Gif";
 import { MenuDoPost } from "@/components/MenuDoPost";
 import { Post } from "@/components/Post";
@@ -34,6 +35,9 @@ export function Feed({ abaInicial, inicial, cursorInicial, eu }: Props) {
   const [publicando, iniciarPublicacao] = useTransition();
   const [carregando, setCarregando] = useState(false);
   const sentinela = useRef<HTMLDivElement>(null);
+  // Quem a pessoa passou a seguir nesta tela, e por qual post. O botão fica
+  // só naquele post (para dar para desfazer) e some dos outros do mesmo autor.
+  const [seguiuPor, setSeguiuPor] = useState<Record<string, string>>({});
 
   const vazio = texto.trim() === "" && !gif;
 
@@ -59,6 +63,7 @@ export function Feed({ abaInicial, inicial, cursorInicial, eu }: Props) {
         criadoEm: new Date().toISOString(),
         editado: false,
         origem: "proprio",
+        seguindo: false,
         enviando: true,
       },
       ...atual,
@@ -161,6 +166,15 @@ export function Feed({ abaInicial, inicial, cursorInicial, eu }: Props) {
           maxLength={LIMITE}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
+          // Enter quebra a linha; Ctrl+Enter (Cmd+Enter no Mac) publica. Com
+          // texto em composição (teclado japonês, chinês), o Enter é do teclado.
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return;
+            if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+            e.preventDefault();
+            enviar();
+          }}
+          aria-keyshortcuts="Control+Enter Meta+Enter"
           placeholder="O que você quer conversar?"
           aria-describedby="novo-post-contador"
           className="placeholder:text-tinta-2 w-full resize-none bg-transparent text-base"
@@ -261,6 +275,24 @@ export function Feed({ abaInicial, inicial, cursorInicial, eu }: Props) {
             <li key={item.id}>
               <Post
                 item={item}
+                seguir={
+                  !item.enviando && item.autorId !== eu.id && !item.seguindo && (seguiuPor[item.autorId] ?? item.id) === item.id ? (
+                    <BotaoSeguir
+                      alvoId={item.autorId}
+                      nome={item.nome}
+                      seguindoInicial={false}
+                      viaPostId={item.id}
+                      aoMudar={(seguindo) =>
+                        setSeguiuPor((atual) => {
+                          const novo = { ...atual };
+                          if (seguindo) novo[item.autorId] = item.id;
+                          else delete novo[item.autorId];
+                          return novo;
+                        })
+                      }
+                    />
+                  ) : undefined
+                }
                 acoes={
                   item.enviando ? (
                     <span className="fino" role="status">

@@ -30,12 +30,19 @@ declare
   v_part text;
   r record;
 begin
+  -- Só as colunas que quem chama pode ler: há tabela com leitura por coluna
+  -- (follows), em que "select *" seria recusado.
   for r in
-    select c.oid::regclass::text as rel
-    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    select c.oid::regclass::text as rel,
+           string_agg(quote_ident(a.attname), ', ' order by a.attnum) as colunas
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
     where n.nspname = 'public' and c.relkind in ('r', 'v')
+      and has_column_privilege(c.oid, a.attnum, 'select')
+    group by c.oid
   loop
-    execute format('select coalesce(string_agg(to_jsonb(t)::text, '' ''), '''') from %s t', r.rel) into v_part;
+    execute format('select coalesce(string_agg(to_jsonb(t)::text, '' ''), '''') from (select %s from %s) t', r.colunas, r.rel) into v_part;
     v_out := v_out || ' ' || v_part;
   end loop;
 
