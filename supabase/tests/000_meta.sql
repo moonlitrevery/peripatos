@@ -187,7 +187,10 @@ select bag_eq(
        ('denunciar_mensagem'), ('aceitar_termos'),
        ('minhas_notificacoes'), ('total_notificacoes_nao_lidas'), ('marcar_notificacoes_lidas'),
        ('minhas_conquistas'), ('conceder_conquista'), ('responder_enigma'),
-       ('configuracoes'), ('definir_configuracao') $$,
+       ('configuracoes'), ('definir_configuracao'),
+       ('eventos_proximos'), ('meus_eventos'), ('evento'), ('criar_evento'), ('editar_evento'), ('cancelar_evento'),
+       ('participar_evento'), ('sair_do_evento'), ('responder_pedido'), ('remover_participante'),
+       ('denunciar_evento'), ('ocultar_evento') $$,
   'META: authenticated só executa as RPCs conhecidas de public'
 );
 

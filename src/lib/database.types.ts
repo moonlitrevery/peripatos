@@ -93,6 +93,100 @@ isOneToOne: false
       referencedColumns: ["id","institution_id"]
     }
                   ]
+                },"event_details": {
+                  Row: {
+                    "event_id": string,"exact_location": string | null,"link": string | null
+                  }
+                  Insert: {
+                    "event_id": string,"exact_location"?: string | null,"link"?: string | null
+                  }
+                  Update: {
+                    "event_id"?: string,"exact_location"?: string | null,"link"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "event_details_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: true
+      referencedRelation: "events"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"event_participants": {
+                  Row: {
+                    "created_at": string,"decided_at": string | null,"event_id": string,"status": Database["public"]['Enums']["event_participation"],"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"decided_at"?: string | null,"event_id": string,"status": Database["public"]['Enums']["event_participation"],"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"decided_at"?: string | null,"event_id"?: string,"status"?: Database["public"]['Enums']["event_participation"],"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "event_participants_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: false
+      referencedRelation: "events"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "event_participants_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"event_tags": {
+                  Row: {
+                    "event_id": string,"tag_id": number
+                  }
+                  Insert: {
+                    "event_id": string,"tag_id": number
+                  }
+                  Update: {
+                    "event_id"?: string,"tag_id"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "event_tags_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: false
+      referencedRelation: "events"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "event_tags_tag_id_fkey"
+      columns: ["tag_id"]
+isOneToOne: false
+      referencedRelation: "tags"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"events": {
+                  Row: {
+                    "cancelled_at": string | null,"capacity": number | null,"created_at": string,"description": string,"ends_at": string | null,"general_location": string | null,"hidden_at": string | null,"hidden_by": string | null,"id": string,"institution_id": string,"kind": Database["public"]['Enums']["event_kind"],"modality": Database["public"]['Enums']["event_modality"],"organizer_id": string,"over_at": string,"reminded_at": string | null,"settled_at": string | null,"starts_at": string,"title": string,"updated_at": string
+                  }
+                  Insert: {
+                    "cancelled_at"?: string | null,"capacity"?: number | null,"created_at"?: string,"description"?: string,"ends_at"?: string | null,"general_location"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id": string,"kind": Database["public"]['Enums']["event_kind"],"modality": Database["public"]['Enums']["event_modality"],"organizer_id": string,"over_at": string,"reminded_at"?: string | null,"settled_at"?: string | null,"starts_at": string,"title": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "cancelled_at"?: string | null,"capacity"?: number | null,"created_at"?: string,"description"?: string,"ends_at"?: string | null,"general_location"?: string | null,"hidden_at"?: string | null,"hidden_by"?: string | null,"id"?: string,"institution_id"?: string,"kind"?: Database["public"]['Enums']["event_kind"],"modality"?: Database["public"]['Enums']["event_modality"],"organizer_id"?: string,"over_at"?: string,"reminded_at"?: string | null,"settled_at"?: string | null,"starts_at"?: string,"title"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "events_hidden_by_fkey"
+      columns: ["hidden_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "events_organizer_id_institution_id_fkey"
+      columns: ["organizer_id","institution_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id","institution_id"]
+    }
+                  ]
                 },"follows": {
                   Row: {
                     "created_at": string,"followee_id": string,"follower_id": string,"via_post_id": string | null
@@ -207,13 +301,13 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "achievement_slug": string | null,"actor_id": string | null,"created_at": string,"id": string,"post_id": string | null,"pushed_at": string | null,"read_at": string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
+                    "achievement_slug": string | null,"actor_id": string | null,"created_at": string,"event_id": string | null,"event_title": string | null,"id": string,"post_id": string | null,"pushed_at": string | null,"read_at": string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
                   }
                   Insert: {
-                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"post_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
+                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"event_id"?: string | null,"event_title"?: string | null,"id"?: string,"post_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"type": Database["public"]['Enums']["notification_type"],"user_id": string
                   }
                   Update: {
-                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"id"?: string,"post_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string
+                    "achievement_slug"?: string | null,"actor_id"?: string | null,"created_at"?: string,"event_id"?: string | null,"event_title"?: string | null,"id"?: string,"post_id"?: string | null,"pushed_at"?: string | null,"read_at"?: string | null,"type"?: Database["public"]['Enums']["notification_type"],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -227,6 +321,12 @@ isOneToOne: false
       columns: ["actor_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: false
+      referencedRelation: "events"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "notifications_post_id_fkey"
@@ -338,13 +438,13 @@ isOneToOne: false
                   ]
                 },"push_preferences": {
                   Row: {
-                    "avatar": boolean,"conquista": boolean,"denuncia": boolean,"mensagem": boolean,"mutuo": boolean,"novo_seguidor": boolean,"termos": boolean,"user_id": string
+                    "avatar": boolean,"conquista": boolean,"denuncia": boolean,"evento": boolean,"mensagem": boolean,"mutuo": boolean,"novo_seguidor": boolean,"termos": boolean,"user_id": string
                   }
                   Insert: {
-                    "avatar"?: boolean,"conquista"?: boolean,"denuncia"?: boolean,"mensagem"?: boolean,"mutuo"?: boolean,"novo_seguidor"?: boolean,"termos"?: boolean,"user_id"?: string
+                    "avatar"?: boolean,"conquista"?: boolean,"denuncia"?: boolean,"evento"?: boolean,"mensagem"?: boolean,"mutuo"?: boolean,"novo_seguidor"?: boolean,"termos"?: boolean,"user_id"?: string
                   }
                   Update: {
-                    "avatar"?: boolean,"conquista"?: boolean,"denuncia"?: boolean,"mensagem"?: boolean,"mutuo"?: boolean,"novo_seguidor"?: boolean,"termos"?: boolean,"user_id"?: string
+                    "avatar"?: boolean,"conquista"?: boolean,"denuncia"?: boolean,"evento"?: boolean,"mensagem"?: boolean,"mutuo"?: boolean,"novo_seguidor"?: boolean,"termos"?: boolean,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -376,16 +476,22 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "created_at": string,"details": string | null,"id": string,"institution_id": string,"message_body": string | null,"message_gif_alt": string | null,"message_gif_id": string | null,"message_id": string | null,"message_sender_id": string | null,"message_sent_at": string | null,"post_id": string | null,"profile_id": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": Database["public"]['Enums']["report_status"]
+                    "created_at": string,"details": string | null,"event_description": string | null,"event_general_location": string | null,"event_id": string | null,"event_organizer_id": string | null,"event_title": string | null,"id": string,"institution_id": string,"message_body": string | null,"message_gif_alt": string | null,"message_gif_id": string | null,"message_id": string | null,"message_sender_id": string | null,"message_sent_at": string | null,"post_id": string | null,"profile_id": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": Database["public"]['Enums']["report_status"]
                   }
                   Insert: {
-                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"message_body"?: string | null,"message_gif_alt"?: string | null,"message_gif_id"?: string | null,"message_id"?: string | null,"message_sender_id"?: string | null,"message_sent_at"?: string | null,"post_id"?: string | null,"profile_id"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                    "created_at"?: string,"details"?: string | null,"event_description"?: string | null,"event_general_location"?: string | null,"event_id"?: string | null,"event_organizer_id"?: string | null,"event_title"?: string | null,"id"?: string,"institution_id"?: string,"message_body"?: string | null,"message_gif_alt"?: string | null,"message_gif_id"?: string | null,"message_id"?: string | null,"message_sender_id"?: string | null,"message_sent_at"?: string | null,"post_id"?: string | null,"profile_id"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
                   }
                   Update: {
-                    "created_at"?: string,"details"?: string | null,"id"?: string,"institution_id"?: string,"message_body"?: string | null,"message_gif_alt"?: string | null,"message_gif_id"?: string | null,"message_id"?: string | null,"message_sender_id"?: string | null,"message_sent_at"?: string | null,"post_id"?: string | null,"profile_id"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
+                    "created_at"?: string,"details"?: string | null,"event_description"?: string | null,"event_general_location"?: string | null,"event_id"?: string | null,"event_organizer_id"?: string | null,"event_title"?: string | null,"id"?: string,"institution_id"?: string,"message_body"?: string | null,"message_gif_alt"?: string | null,"message_gif_id"?: string | null,"message_id"?: string | null,"message_sender_id"?: string | null,"message_sent_at"?: string | null,"post_id"?: string | null,"profile_id"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["report_status"]
                   }
                   Relationships: [
                     {
+      foreignKeyName: "reports_event_organizer_id_fkey"
+      columns: ["event_organizer_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "reports_message_sender_id_fkey"
       columns: ["message_sender_id"]
 isOneToOne: false
@@ -526,6 +632,9 @@ isOneToOne: false
 "banir_usuario":
 { Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
+"cancelar_evento":
+{ Args: { "p_evento": string }; Returns: undefined
+                           },
 "completar_onboarding":
 { Args: { "p_bio"?: string,"p_data_nascimento": string,"p_display_name": string,"p_termos_versao"?: string,"p_username": string }; Returns: Json
                            },
@@ -543,11 +652,17 @@ isOneToOne: false
 "conta_status":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"criar_evento":
+{ Args: { "p_descricao": string,"p_fim": string,"p_inicio": string,"p_link": string,"p_local_exato": string,"p_local_geral": string,"p_modalidade": Database["public"]['Enums']["event_modality"],"p_tags"?: (number)[],"p_tipo": Database["public"]['Enums']["event_kind"],"p_titulo": string,"p_vagas": number }; Returns: string
+                           },
 "definir_cargo":
 { Args: { "p_motivo": string,"p_papel": Database["public"]['Enums']["staff_role"],"p_user_id": string }; Returns: undefined
                            },
 "definir_configuracao":
 { Args: { "p_chave": string,"p_motivo": string,"p_valor": string }; Returns: undefined
+                           },
+"denunciar_evento":
+{ Args: { "p_detalhe"?: string,"p_evento": string,"p_motivo": Database["public"]['Enums']["report_reason"] }; Returns: string
                            },
 "denunciar_mensagem":
 { Args: { "p_detalhe"?: string,"p_mensagem": string,"p_motivo": Database["public"]['Enums']["report_reason"] }; Returns: string
@@ -555,6 +670,25 @@ isOneToOne: false
 "desbanir_usuario":
 { Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
+"editar_evento":
+{ Args: { "p_descricao": string,"p_evento": string,"p_fim": string,"p_inicio": string,"p_link": string,"p_local_exato": string,"p_local_geral": string,"p_modalidade": Database["public"]['Enums']["event_modality"],"p_tags"?: (number)[],"p_titulo": string,"p_vagas": number }; Returns: undefined
+                           },
+"evento":
+{ Args: { "p_evento": string }; Returns: Database["public"]['CompositeTypes']["evento_visto"][]
+                          SetofOptions: {
+        from: "*"
+        to: "evento_visto"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
+"eventos_proximos":
+{ Args: { "p_com_meus_gostos"?: boolean,"p_modalidade"?: Database["public"]['Enums']["event_modality"] }; Returns: Database["public"]['CompositeTypes']["evento_visto"][]
+                          SetofOptions: {
+        from: "*"
+        to: "evento_visto"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "excluir_conta":
 { Args: { "p_confirmacao": string }; Returns: undefined
                            },
@@ -579,6 +713,14 @@ isOneToOne: false
               "bloqueado_em": string,"display_name": string,"user_id": string,"username": string
             }[]
                            },
+"meus_eventos":
+{ Args: Record<PropertyKey, never>; Returns: Database["public"]['CompositeTypes']["evento_visto"][]
+                          SetofOptions: {
+        from: "*"
+        to: "evento_visto"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "minhas_conquistas":
 { Args: Record<PropertyKey, never>; Returns: {
               "ganha_em": string,"oculta": boolean,"slug": string
@@ -596,14 +738,20 @@ isOneToOne: false
                            },
 "minhas_notificacoes":
 { Args: Record<PropertyKey, never>; Returns: {
-              "conquista_cor": string,"conquista_emoji": string,"conquista_emoji_rotulo": string,"conquista_nome": string,"conquista_slug": string,"grupo": string,"lida": boolean,"pelo_post": boolean,"pessoas": Json,"post_trecho": string,"quantidade": number,"tipo": Database["public"]['Enums']["notification_type"],"ultima_em": string
+              "conquista_cor": string,"conquista_emoji": string,"conquista_emoji_rotulo": string,"conquista_nome": string,"conquista_slug": string,"evento_id": string,"evento_titulo": string,"grupo": string,"lida": boolean,"pelo_post": boolean,"pessoas": Json,"post_trecho": string,"quantidade": number,"tipo": Database["public"]['Enums']["notification_type"],"ultima_em": string
             }[]
                            },
 "moderar_avatar":
 { Args: { "p_aprovar": boolean,"p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
+"ocultar_evento":
+{ Args: { "p_evento": string,"p_motivo": string }; Returns: undefined
+                           },
 "ocultar_post":
 { Args: { "p_motivo": string,"p_post_id": string }; Returns: undefined
+                           },
+"participar_evento":
+{ Args: { "p_evento": string }; Returns: Database["public"]['Enums']["event_participation"]
                            },
 "pessoas_parecidas":
 { Args: { "p_limite"?: number }; Returns: {
@@ -631,6 +779,9 @@ isOneToOne: false
 "remover_cargo":
 { Args: { "p_motivo": string,"p_user_id": string }; Returns: undefined
                            },
+"remover_participante":
+{ Args: { "p_evento": string,"p_user_id": string }; Returns: undefined
+                           },
 "resolver_denuncia":
 { Args: { "p_nota": string,"p_report_id": string,"p_status": Database["public"]['Enums']["report_status"] }; Returns: undefined
                            },
@@ -640,11 +791,17 @@ isOneToOne: false
 "responder_enigma":
 { Args: { "p_resposta": string }; Returns: boolean
                            },
+"responder_pedido":
+{ Args: { "p_aceitar": boolean,"p_evento": string,"p_user_id": string }; Returns: undefined
+                           },
 "restaurar_post":
 { Args: { "p_motivo": string,"p_post_id": string }; Returns: undefined
                            },
 "revogar_tags_sensiveis":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"sair_do_evento":
+{ Args: { "p_evento": string }; Returns: undefined
                            },
 "total_nao_lidas":
 { Args: Record<PropertyKey, never>; Returns: number
@@ -654,10 +811,12 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "avatar_status": "sem_avatar"|"pendente"|"aprovado"|"recusado","moderation_action_type": "ocultar_post"|"restaurar_post"|"banir_usuario"|"desbanir_usuario"|"aprovar_avatar"|"recusar_avatar"|"resolver_denuncia"|"conceder_cargo"|"remover_cargo"|"resolver_pedido_tag"|"conceder_conquista"|"alterar_configuracao","notification_type": "novo_seguidor"|"mutuo"|"avatar_aprovado"|"avatar_recusado"|"denuncia_analisada"|"termos_atualizados"|"conquista"|"cargo_concedido","report_reason": "spam"|"assedio"|"discurso_de_odio"|"conteudo_sexual"|"violencia_ou_ameaca"|"perfil_falso"|"menor_de_idade"|"exposicao_de_dados_pessoais"|"outro","report_status": "aberta"|"em_analise"|"resolvida"|"rejeitada","staff_role": "moderador"|"admin","tag_request_status": "pendente"|"aprovada"|"recusada"
+            "avatar_status": "sem_avatar"|"pendente"|"aprovado"|"recusado","event_kind": "aberto"|"aprovacao","event_modality": "presencial"|"online","event_participation": "pendente"|"confirmado"|"recusado","moderation_action_type": "ocultar_post"|"restaurar_post"|"banir_usuario"|"desbanir_usuario"|"aprovar_avatar"|"recusar_avatar"|"resolver_denuncia"|"conceder_cargo"|"remover_cargo"|"resolver_pedido_tag"|"conceder_conquista"|"alterar_configuracao"|"ocultar_evento","notification_type": "novo_seguidor"|"mutuo"|"avatar_aprovado"|"avatar_recusado"|"denuncia_analisada"|"termos_atualizados"|"conquista"|"cargo_concedido"|"evento_pedido"|"evento_aceito"|"evento_alterado"|"evento_cancelado"|"evento_lembrete","report_reason": "spam"|"assedio"|"discurso_de_odio"|"conteudo_sexual"|"violencia_ou_ameaca"|"perfil_falso"|"menor_de_idade"|"exposicao_de_dados_pessoais"|"outro","report_status": "aberta"|"em_analise"|"resolvida"|"rejeitada","staff_role": "moderador"|"admin","tag_request_status": "pendente"|"aprovada"|"recusada"
           }
           CompositeTypes: {
-            [_ in never]: never
+            "evento_visto": {
+                        "id": string | null,"titulo": string | null,"descricao": string | null,"inicio": string | null,"fim": string | null,"modalidade": Database["public"]['Enums']["event_modality"] | null,"local_geral": string | null,"tipo": Database["public"]['Enums']["event_kind"] | null,"vagas": number | null,"vagas_restantes": number | null,"organizador_id": string | null,"organizador_username": string | null,"organizador_nome": string | null,"organizador_avatar_path": string | null,"organizador_avatar_preset": number | null,"tags": Json | null,"tags_em_comum": number | null,"meu_status": string | null,"cancelado": boolean | null,"oculto": boolean | null,"acabou": boolean | null,"local_exato": string | null,"link": string | null,"pedidos_pendentes": number | null
+                      }
           }
         }
 }
@@ -770,7 +929,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "avatar_status": ["sem_avatar", "pendente", "aprovado", "recusado"],"moderation_action_type": ["ocultar_post", "restaurar_post", "banir_usuario", "desbanir_usuario", "aprovar_avatar", "recusar_avatar", "resolver_denuncia", "conceder_cargo", "remover_cargo", "resolver_pedido_tag", "conceder_conquista", "alterar_configuracao"],"notification_type": ["novo_seguidor", "mutuo", "avatar_aprovado", "avatar_recusado", "denuncia_analisada", "termos_atualizados", "conquista", "cargo_concedido"],"report_reason": ["spam", "assedio", "discurso_de_odio", "conteudo_sexual", "violencia_ou_ameaca", "perfil_falso", "menor_de_idade", "exposicao_de_dados_pessoais", "outro"],"report_status": ["aberta", "em_analise", "resolvida", "rejeitada"],"staff_role": ["moderador", "admin"],"tag_request_status": ["pendente", "aprovada", "recusada"]
+            "avatar_status": ["sem_avatar", "pendente", "aprovado", "recusado"],"event_kind": ["aberto", "aprovacao"],"event_modality": ["presencial", "online"],"event_participation": ["pendente", "confirmado", "recusado"],"moderation_action_type": ["ocultar_post", "restaurar_post", "banir_usuario", "desbanir_usuario", "aprovar_avatar", "recusar_avatar", "resolver_denuncia", "conceder_cargo", "remover_cargo", "resolver_pedido_tag", "conceder_conquista", "alterar_configuracao", "ocultar_evento"],"notification_type": ["novo_seguidor", "mutuo", "avatar_aprovado", "avatar_recusado", "denuncia_analisada", "termos_atualizados", "conquista", "cargo_concedido", "evento_pedido", "evento_aceito", "evento_alterado", "evento_cancelado", "evento_lembrete"],"report_reason": ["spam", "assedio", "discurso_de_odio", "conteudo_sexual", "violencia_ou_ameaca", "perfil_falso", "menor_de_idade", "exposicao_de_dados_pessoais", "outro"],"report_status": ["aberta", "em_analise", "resolvida", "rejeitada"],"staff_role": ["moderador", "admin"],"tag_request_status": ["pendente", "aprovada", "recusada"]
           }
         }
 } as const

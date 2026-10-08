@@ -404,7 +404,7 @@ test.describe("Perfil e Gente", () => {
 });
 
 test.describe("Layout responsivo", () => {
-  const TELAS = ["/", "/gente", "/u/caue", "/mensagens", "/notificacoes", "/voce", "/conquistas", "/config"];
+  const TELAS = ["/", "/gente", "/eventos", "/u/caue", "/mensagens", "/notificacoes", "/voce", "/conquistas", "/config"];
 
   for (const largura of [375, 768, 1440]) {
     test(`${largura}px: navegação, coluna de leitura e nada cortado`, async ({ browser }) => {

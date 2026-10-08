@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AbasDeGente } from "@/components/AbasDeGente";
 import { Avatar } from "@/components/Avatar";
 import { BotaoSeguir } from "@/components/BotaoSeguir";
 import { SeloMutuo } from "@/components/SeloMutuo";
@@ -31,6 +32,7 @@ export default async function Gente() {
 
   return (
     <div className="flex flex-col gap-5">
+      <AbasDeGente atual="pessoas" />
       <header className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold">Gente</h1>
         <p className="text-tinta-2">Quem mais gosta do que você gosta, na sua universidade.</p>

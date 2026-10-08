@@ -20,7 +20,7 @@ export default async function Config() {
     meuCargo(),
     supabase
       .from("push_preferences")
-      .select("mensagem, mutuo, novo_seguidor, conquista, avatar, denuncia, termos")
+      .select("mensagem, mutuo, novo_seguidor, conquista, avatar, denuncia, termos, evento")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
@@ -81,7 +81,7 @@ export default async function Config() {
         <Notificacoes
           // sem linha no banco valem os padrões: mensagens sim, o resto não
           porTipo={
-            push.data ?? { mensagem: true, mutuo: false, novo_seguidor: false, conquista: false, avatar: false, denuncia: false, termos: false }
+            push.data ?? { mensagem: true, mutuo: false, novo_seguidor: false, conquista: false, avatar: false, denuncia: false, termos: false, evento: false }
           }
         />
       </section>

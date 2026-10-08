@@ -30,7 +30,7 @@ update public.profiles set created_at = now() - interval '60 days';
 -- ---------------------------------------------------------------------------
 -- Catálogo
 -- ---------------------------------------------------------------------------
-select is((select count(*) from public.achievements), 19::bigint, 'o catálogo tem as 19 conquistas');
+select is((select count(*) from public.achievements), 21::bigint, 'o catálogo tem as 21 conquistas');
 select is(
   (select array_agg(slug order by slug) from public.achievements where is_secret),
   array['coruja-de-atena', 'minotauro'], 'secretas: Coruja de Atena e Minotauro'
@@ -44,10 +44,10 @@ select is(
   array['hefesto', 'heracles'], 'concedidas à mão: Hefesto e Héracles'
 );
 select is(
-  (select count(distinct color) from public.achievements), 19::bigint, 'cada conquista tem a sua cor'
+  (select count(distinct color) from public.achievements), 21::bigint, 'cada conquista tem a sua cor'
 );
 select is(
-  (select count(distinct emoji) from public.achievements), 19::bigint, 'e o seu emoji'
+  (select count(distinct emoji) from public.achievements), 21::bigint, 'e o seu emoji'
 );
 select is(
   (select count(*) from public.achievements where btrim(emoji_label) = ''), 0::bigint,
@@ -402,7 +402,7 @@ select is(
     where n.user_id = tests.uid('koi2') and n.achievement_slug = 'koinonia'),
   jsonb_build_object(
     'user_id', tests.uid('koi2'), 'type', 'conquista', 'actor_id', null,
-    'achievement_slug', 'koinonia', 'read_at', null, 'pushed_at', null, 'post_id', null),
+    'achievement_slug', 'koinonia', 'read_at', null, 'pushed_at', null, 'post_id', null, 'event_id', null, 'event_title', null),
   'a notificação da Koinonia não aponta para ninguém'
 );
 select tests.login('koi2');

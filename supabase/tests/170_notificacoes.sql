@@ -175,7 +175,7 @@ select is(
     where n.user_id = tests.uid('ana') and n.type = 'denuncia_analisada'),
   jsonb_build_object(
     'user_id', tests.uid('ana'), 'type', 'denuncia_analisada', 'actor_id', null,
-    'achievement_slug', null, 'read_at', null, 'pushed_at', null, 'post_id', null),
+    'achievement_slug', null, 'read_at', null, 'pushed_at', null, 'post_id', null, 'event_id', null, 'event_title', null),
   'a notificação não guarda quem foi denunciado, o resultado, a nota nem a medida tomada'
 );
 select tests.login('ana');
