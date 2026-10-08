@@ -7,11 +7,14 @@ import { rotuloDoMotivo } from "@/lib/denuncias";
 import { exigirSessao, meuCargo, nivelDaSessao } from "@/lib/sessao";
 import { haQuantoTempo } from "@/lib/tempo";
 import { AcaoComMotivo } from "./AcaoComMotivo";
+import { Equipe, type Membro } from "./Equipe";
 
 export const metadata: Metadata = { title: "Moderação" };
 
-export default async function Moderacao() {
-  const { supabase } = await exigirSessao();
+export default async function Moderacao({ searchParams }: PageProps<"/moderacao">) {
+  const { supabase, user } = await exigirSessao();
+  const { equipe: buscaBruta } = await searchParams;
+  const busca = typeof buscaBruta === "string" ? buscaBruta : "";
 
   // Quem não é staff volta para o Início. Isto é só navegação: sem cargo, as
   // consultas abaixo voltariam vazias e as RPCs recusariam de qualquer jeito.
@@ -21,7 +24,9 @@ export default async function Moderacao() {
   // isso o banco devolveria as filas vazias e recusaria qualquer ação.
   if ((await nivelDaSessao()) !== "aal2") redirect("/moderacao/verificacao");
 
-  const [denuncias, pendentes] = await Promise.all([
+  const ehAdmin = cargo === "admin";
+
+  const [denuncias, pendentes, cargos] = await Promise.all([
     supabase
       .from("reports")
       .select("id, reason, details, status, created_at, post_id, profile_id, message_id, message_sender_id, message_body, message_gif_id, message_gif_alt, message_sent_at")
@@ -34,7 +39,14 @@ export default async function Moderacao() {
       .eq("avatar_status", "pendente")
       .order("updated_at", { ascending: true })
       .limit(50),
+    // A equipe da instituição (o RLS só mostra quem a pessoa pode ver).
+    supabase.from("staff_roles").select("user_id, role, created_at"),
   ]);
+  const membros: Membro[] = cargos.data ?? [];
+  // A moderação não age sobre quem é da equipe, e ninguém decide a própria
+  // foto: o banco recusa, então os botões nem aparecem.
+  const daEquipe = new Set(membros.map((m) => m.user_id));
+  const possoAgirSobre = (id: string | null | undefined) => ehAdmin || !id || !daEquipe.has(id);
 
   const lista = denuncias.data ?? [];
   const idsPosts = lista.flatMap((d) => (d.post_id ? [d.post_id] : []));
@@ -127,7 +139,10 @@ export default async function Moderacao() {
                     {d.post_id && !post && <p className="text-tinta-2">O post não está mais disponível.</p>}
                   </div>
 
-                  <footer className="flex flex-wrap gap-2">
+                  {!possoAgirSobre(alvoId) && (
+                    <p className="text-tinta-2">Esta denúncia é sobre alguém da equipe: só a administração decide.</p>
+                  )}
+                  <footer className={possoAgirSobre(alvoId) ? "flex flex-wrap gap-2" : "hidden"}>
                     {post && !post.hidden_at && (
                       <AcaoComMotivo
                         rotulo="Ocultar post"
@@ -187,15 +202,23 @@ export default async function Moderacao() {
                 <p className="font-semibold">
                   {f.display_name} <span className="fino font-normal">@{f.username}</span>
                 </p>
-                <footer className="flex flex-wrap gap-2">
-                  <AcaoComMotivo rotulo="Aprovar" titulo="Aprovar esta foto" acao={moderarAvatar.bind(null, f.id, true)} />
-                  <AcaoComMotivo rotulo="Recusar" titulo="Recusar esta foto" perigo acao={moderarAvatar.bind(null, f.id, false)} />
-                </footer>
+                {f.id === user.id ? (
+                  <p className="text-tinta-2">É a sua foto: outra pessoa da equipe decide.</p>
+                ) : !possoAgirSobre(f.id) ? (
+                  <p className="text-tinta-2">É de alguém da equipe: só a administração decide.</p>
+                ) : (
+                  <footer className="flex flex-wrap gap-2">
+                    <AcaoComMotivo rotulo="Aprovar" titulo="Aprovar esta foto" acao={moderarAvatar.bind(null, f.id, true)} />
+                    <AcaoComMotivo rotulo="Recusar" titulo="Recusar esta foto" perigo acao={moderarAvatar.bind(null, f.id, false)} />
+                  </footer>
+                )}
               </article>
             </li>
           ))}
         </ul>
       </section>
+
+      {ehAdmin && <Equipe supabase={supabase} eu={user.id} membros={membros} busca={busca} />}
     </div>
   );
 }

@@ -10,6 +10,13 @@ Os valores abaixo ficam em `private.config`, uma tabela que a API não
 alcança. Mudam por ambiente e **não vão para o git nem para uma migration**.
 Rode no SQL Editor do painel do Supabase (ou com `psql`), como `postgres`.
 
+As três datas (`fundador_ate`, `panateneia_inicio`, `panateneia_fim`) também
+podem ser mudadas pela administração, sem SQL, com a RPC
+`public.definir_configuracao(p_chave, p_valor, p_motivo)`: só admin com o
+segundo fator, com o motivo registrado em `moderation_actions`
+(`alterar_configuracao`). `public.configuracoes()` devolve os valores atuais.
+Ainda não há tela para isso. A resposta do enigma continua só por SQL.
+
 ### 1. Fim do beta (conquista Fundador)
 
 Fundador é de quem criou a conta **antes** da data de corte. Enquanto a data
